@@ -5,6 +5,7 @@
 	// ca-pub-1234567890123456
 	const PUBLISHER_ID = 'ca-pub-1083671059005419';
 	const AD_FREQUENCY_HINT = '120s';
+	const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
 	let sequence = 0;
 	const placements = Object.create(null);
@@ -20,7 +21,7 @@
 	}
 
 	function initialize() {
-		if (!validPublisherId(PUBLISHER_ID)) {
+		if (IS_LOCAL || !validPublisherId(PUBLISHER_ID)) {
 			window.FORMA_ADS = {
 				request: function (name) {
 					placements[name] = { done: true };

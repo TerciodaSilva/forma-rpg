@@ -9,7 +9,6 @@ var bestiary_resume: bool = false
 var audio: FormaAudio
 var dedicated_server: bool = false
 var previous_arena_mode: String = "menu"
-var pending_start: bool = false
 
 func _ready() -> void:
 	dedicated_server = "--server" in OS.get_cmdline_user_args()
@@ -121,9 +120,6 @@ func _physics_process(delta: float) -> void:
 func _process(_delta: float) -> void:
 	if dedicated_server or arena == null:
 		return
-	if pending_start and ad_request_done("start"):
-		pending_start = false
-		perform_start()
 	if arena.mode == "lost" and previous_arena_mode != "lost":
 		request_ad("death")
 	previous_arena_mode = arena.mode
@@ -134,20 +130,9 @@ func request_ad(placement: String) -> void:
 	var encoded_placement = JSON.stringify(placement)
 	JavaScriptBridge.eval("if (window.FORMA_ADS) window.FORMA_ADS.request(" + encoded_placement + ");")
 
-func ad_request_done(placement: String) -> bool:
-	if not OS.has_feature("web"):
-		return true
-	var encoded_placement = JSON.stringify(placement)
-	return bool(JavaScriptBridge.eval("window.FORMA_ADS ? window.FORMA_ADS.isDone(" + encoded_placement + ") : true"))
-
 func begin_start() -> void:
-	if pending_start:
-		return
-	if OS.has_feature("web"):
-		pending_start = true
-		request_ad("start")
-	else:
-		perform_start()
+	perform_start()
+	request_ad("start")
 
 func perform_start() -> void:
 	if network.active:
