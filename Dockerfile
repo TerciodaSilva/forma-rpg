@@ -27,4 +27,4 @@ COPY . .
 
 ENV PORT=10000
 
-CMD ["sh", "-c", "exec godot --headless --path /app -- --server --port=${PORT:-10000} --players=10 --difficulty=1"]
+CMD ["sh", "-c", "godot --headless --path /app --editor --import --quit && exec godot --headless --path /app -- --server --port=${PORT:-10000} --players=10 --difficulty=1"]
