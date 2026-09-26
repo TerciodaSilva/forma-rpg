@@ -7,8 +7,13 @@ var world: FormaWorldView
 var ui: FormaInterface
 var bestiary_resume: bool = false
 var audio: FormaAudio
+var dedicated_server: bool = false
 
 func _ready() -> void:
+	dedicated_server = "--server" in OS.get_cmdline_user_args()
+	if dedicated_server:
+		start_dedicated_server()
+		return
 	add_child(FormaDisplay.new())
 	configure_inputs()
 	arena = FormaArena.new()
@@ -33,18 +38,6 @@ func _ready() -> void:
 	settings.menu_name.text_submitted.connect(func(_value: String): handle_action("start"))
 	network.entered.connect(func():
 		if arena.player != null: world.camera = arena.player.pos)
-	if "--server" in OS.get_cmdline_user_args():
-		var server_port = 9080
-		var server_slots = 10
-		for arg in OS.get_cmdline_user_args():
-			if arg.begins_with("--port="): server_port = clampi(int(arg.trim_prefix("--port=")), 1024, 65535)
-			if arg.begins_with("--players="): server_slots = clampi(int(arg.trim_prefix("--players=")), 2, 10)
-			if arg.begins_with("--difficulty="): arena.difficulty = clampi(int(arg.trim_prefix("--difficulty=")), 0, 2)
-		var error = network.host(server_port, server_slots, true)
-		if error != OK: get_tree().quit(1)
-		else: print("FORMA_SERVER_READY port=%d" % server_port)
-		world.hide()
-		ui.hide()
 	get_window().focus_exited.connect(on_focus_lost)
 	if "--preview-arena" in OS.get_cmdline_user_args():
 		arena.new_run(0)
@@ -78,6 +71,23 @@ func _ready() -> void:
 		ui.help_open = true
 		capture.call_deferred("help")
 
+func start_dedicated_server() -> void:
+	arena = FormaArena.new()
+	add_child(arena)
+	network = FormaNetwork.new()
+	network.name = "Network"
+	network.arena = arena
+	add_child(network)
+	var server_port = 10000
+	var server_slots = 10
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--port="): server_port = clampi(int(arg.trim_prefix("--port=")), 1024, 65535)
+		if arg.begins_with("--players="): server_slots = clampi(int(arg.trim_prefix("--players=")), 2, 10)
+		if arg.begins_with("--difficulty="): arena.difficulty = clampi(int(arg.trim_prefix("--difficulty=")), 0, 2)
+	var error = network.host(server_port, server_slots, true)
+	if error != OK: get_tree().quit(1)
+	else: print("FORMA_SERVER_READY port=%d" % server_port)
+
 func configure_inputs() -> void:
 	var actions = {"move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT], "move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN]}
 	for action in actions:
@@ -89,6 +99,9 @@ func configure_inputs() -> void:
 			InputMap.action_add_event(action, event)
 
 func _physics_process(delta: float) -> void:
+	if dedicated_server:
+		network.tick(delta, Vector2.ZERO, Vector2.ZERO, false)
+		return
 	settings.menu_obscured = ui.help_open or ui.bestiary_open
 	arena.move_input = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	arena.aim_point = world.screen_to_world(get_global_mouse_position())
