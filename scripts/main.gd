@@ -8,6 +8,8 @@ var ui: FormaInterface
 var bestiary_resume: bool = false
 var audio: FormaAudio
 var dedicated_server: bool = false
+var previous_arena_mode: String = "menu"
+var pending_start: bool = false
 
 func _ready() -> void:
 	dedicated_server = "--server" in OS.get_cmdline_user_args()
@@ -39,6 +41,7 @@ func _ready() -> void:
 	network.entered.connect(func():
 		if arena.player != null: world.camera = arena.player.pos)
 	get_window().focus_exited.connect(on_focus_lost)
+	previous_arena_mode = arena.mode
 	if "--preview-arena" in OS.get_cmdline_user_args():
 		arena.new_run(0)
 		arena.mode = "paused"
@@ -114,6 +117,43 @@ func _physics_process(delta: float) -> void:
 		network.tick(delta, Vector2.ZERO if blocked else direction, arena.aim_point, not blocked and (arena.attack_held or arena.auto_attack))
 	else:
 		arena.step(delta)
+
+func _process(_delta: float) -> void:
+	if dedicated_server or arena == null:
+		return
+	if pending_start and ad_request_done("start"):
+		pending_start = false
+		perform_start()
+	if arena.mode == "lost" and previous_arena_mode != "lost":
+		request_ad("death")
+	previous_arena_mode = arena.mode
+
+func request_ad(placement: String) -> void:
+	if not OS.has_feature("web"):
+		return
+	var encoded_placement = JSON.stringify(placement)
+	JavaScriptBridge.eval("if (window.FORMA_ADS) window.FORMA_ADS.request(" + encoded_placement + ");")
+
+func ad_request_done(placement: String) -> bool:
+	if not OS.has_feature("web"):
+		return true
+	var encoded_placement = JSON.stringify(placement)
+	return bool(JavaScriptBridge.eval("window.FORMA_ADS ? window.FORMA_ADS.isDone(" + encoded_placement + ") : true"))
+
+func begin_start() -> void:
+	if pending_start:
+		return
+	if OS.has_feature("web"):
+		pending_start = true
+		request_ad("start")
+	else:
+		perform_start()
+
+func perform_start() -> void:
+	if network.active:
+		network.command("respawn")
+	else:
+		settings.start_match()
 
 func _input(event: InputEvent) -> void:
 	if settings.is_open() or (event is InputEventKey and settings.menu_name.visible and settings.menu_name.has_focus()):
@@ -217,10 +257,7 @@ func handle_action(action: String) -> void:
 			"settings":
 				settings.show_panel()
 			"start", "restart":
-				if network.active:
-					network.command("respawn")
-					return
-				settings.start_match()
+				begin_start()
 			"pause", "resume":
 				arena.attack_held = false
 				if network.active:

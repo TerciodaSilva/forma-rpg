@@ -10,3 +10,4 @@ fi
 mkdir -p web
 "$FORMA_GODOT" --headless --path . --editor --import --quit
 "$FORMA_GODOT" --headless --path . --export-release Web web/index.html
+test -f web/ads.js
