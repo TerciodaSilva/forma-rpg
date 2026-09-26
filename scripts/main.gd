@@ -81,7 +81,7 @@ func start_dedicated_server() -> void:
 	network.name = "Network"
 	network.arena = arena
 	add_child(network)
-	var server_port = 10000
+	var server_port = 9080
 	var server_slots = 10
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("--port="): server_port = clampi(int(arg.trim_prefix("--port=")), 1024, 65535)
