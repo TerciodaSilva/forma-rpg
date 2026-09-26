@@ -162,6 +162,8 @@ func load_settings() -> void:
 	if config.load("user://forma_settings.cfg") != OK: return
 	nickname.text = str(config.get_value("settings", "nickname", "Viajante")).left(16)
 	address.text = str(config.get_value("settings", "address", default_address()))
+	if OS.has_feature("web") and address.text.contains(".vercel.app:9080"):
+		address.text = default_address()
 	port.value = clampf(float(config.get_value("settings", "port", 9080)), 1024, 65535)
 	slots.value = clampf(float(config.get_value("settings", "slots", 10)), 2, 10) if int(config.get_value("settings", "version", 0)) >= 3 else 10
 	difficulty.select(clampi(int(config.get_value("settings", "difficulty", 1)), 0, 2))
