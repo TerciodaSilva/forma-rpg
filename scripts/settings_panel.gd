@@ -205,5 +205,5 @@ func start_match() -> void:
 
 func default_address() -> String:
 	if OS.has_feature("web"):
-		return str(JavaScriptBridge.eval("(location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':9080'"))
+		return str(JavaScriptBridge.eval("location.hostname.endsWith('.vercel.app') ? 'wss://forma-rpg-server.onrender.com' : ((location.protocol === 'https:' ? 'wss://' : 'ws://') + location.hostname + ':9080')"))
 	return "ws://127.0.0.1:9080"
