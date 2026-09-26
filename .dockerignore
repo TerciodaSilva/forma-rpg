@@ -1,0 +1,9 @@
+.git
+.godot
+.tools
+artifacts
+tests
+web
+*.zip
+*.log
+.DS_Store
