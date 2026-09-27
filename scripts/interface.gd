@@ -74,8 +74,6 @@ func _draw() -> void:
 	if arena.mode == "menu": draw_menu()
 	else:
 		draw_hud()
-		if arena.mode == "playing" and arena.pending_upgrades > 0:
-			draw_upgrades()
 		match arena.mode:
 			"paused": draw_pause()
 			"lost": draw_result()
@@ -164,8 +162,11 @@ func draw_hud() -> void:
 	if size.x >= 1100 and size.y >= 600:
 		draw_leaderboard(Rect2(size.x - p - 232, p + 54, 232, 200))
 		draw_boons(Rect2(p, rect.end.y + 67, 300, 88))
-	elif size.y >= 600:
-		button("bestiary", "Dons %d/10  [B]" % actor.boons.size(), Rect2(p, rect.end.y + 65, 145, 34), false, P.GOLD, 13)
+		draw_status(Rect2(Vector2(p + 312, rect.end.y + 67), Vector2(300, 88)))
+	else:
+		draw_status(Rect2(p, rect.end.y + 67, summary_width, 88))
+		if size.y >= 600:
+			button("bestiary", "Dons %d/10  [B]" % actor.boons.size(), Rect2(p, rect.end.y + 163, 145, 34), false, P.GOLD, 13)
 	var bar = FormaLayout.skills(size)
 	var slot_width = (bar.size.x - 16) / 3
 	var data = FormaClasses.DATA[actor.class_id]
@@ -175,7 +176,7 @@ func draw_hud() -> void:
 	draw_skill_slot(Rect2(bar.position + Vector2((slot_width + 8) * 3, 0), Vector2(slot_width, bar.size.y)), "ESPAÇO", "Esquiva", actor.dash_cooldown, P.TEXT)
 	if size.x >= 700 and size.y >= 520:
 		label("WASD mover · Q habilidade · Espaço esquiva · F autoataque", p, bar.position.y - 24, 12, P.MUTED)
-	if size.x >= 950 and arena.pending_upgrades == 0 and size.y >= 600:
+	if size.x >= 950 and size.y >= 600:
 		draw_minimap(Rect2(size.x - p - 172, size.y - p - 144, 172, 144))
 	if arena.boss != null and arena.boss.alive:
 		var width = minf(340, size.x - p * 2)
@@ -228,6 +229,15 @@ func draw_skill_slot(rect: Rect2, key: String, title: String, cooldown: float, c
 	if cooldown > 0:
 		var maximum: float = 4 if key == "ESPAÇO" else (6 if key == "R" else FormaClasses.DATA[arena.player.class_id].cooldown)
 		D.bar(self, Rect2(rect.position + Vector2(10, 54), Vector2(rect.size.x - 20, 2)), 1 - cooldown / maximum, color)
+
+func draw_status(rect: Rect2) -> void:
+	var actor = arena.player
+	if actor == null: return
+	D.panel(self, rect, Color(P.PANEL, 0.92), P.LINE, 8)
+	label("MELHORIAS AUTOMÁTICAS", rect.position.x + 12, rect.position.y + 10, 11, P.GOLD)
+	label("Dano +%d · Vida máx %d" % [int(actor.damage_bonus), int(actor.max_hp)], rect.position.x + 12, rect.position.y + 31, 11, P.TEXT)
+	label("Veloc. +%d%% · Coleta +%d px" % [int(round((actor.speed_multiplier - 1.0) * 100.0)), int(actor.pickup_bonus)], rect.position.x + 12, rect.position.y + 50, 11, P.TEXT)
+	label("Regeneração +%.1f PV/s" % actor.regeneration, rect.position.x + 12, rect.position.y + 69, 11, P.TEXT)
 
 func draw_upgrades() -> void:
 	var rect = FormaLayout.upgrades(screen_size(), upgrades_collapsed)
@@ -298,8 +308,8 @@ func draw_help() -> void:
 	var rect = FormaLayout.modal(screen_size(), Vector2(720, 620))
 	var p = rect.position
 	label("GUIA DO VIAJANTE", p.x + 12, p.y + 6, 13, P.GOLD)
-	var text = "WASD / Setas · Mover\nMouse / clique · Mirar e atacar\nQ / clique direito · Habilidade\nR · Escudo (1,5 s, sem atacar)\nEspaço · Esquiva\n1–3 · Escolher melhoria sem parar\nE / F · Mover pelo mouse / autoataque\nB · Bestiário   Esc · Pausa   M · Som\n\nColete essência para evoluir. Cada próximo nível custa mais. As melhorias ficam no canto; você continua lutando.\n\nChefes concedem dons ao golpe final. Morrer elimina os dons. Escudos impedem absorção. No multiplayer, os menus não pausam a sala."
-	text += "\n\nSalas automáticas: até 10 participantes, com bots nas vagas livres. Jogadores substituem bots ao entrar.\n\n" + FormaSpells.description(arena.player.class_id if arena.mode != "menu" and arena.player != null else arena.selected_class)
+	var text = "WASD / Setas · Mover\nMouse / clique · Mirar e atacar\nQ / clique direito · Habilidade\nR · Escudo (1,5 s, sem atacar)\nEspaço · Esquiva\nMelhorias · Aplicadas automaticamente\nE / F · Mover pelo mouse / autoataque\nB · Bestiário   Esc · Pausa   M · Som\n\nColete essência para evoluir. Cada próximo nível custa mais. As melhorias são aplicadas automaticamente e aparecem no painel de status.\n\nChefes concedem dons ao golpe final. Morrer elimina os dons. Escudos impedem absorção. No multiplayer, os menus não pausam a sala."
+	text += "\n\nSalas automáticas: até 10 participantes, com preenchimento equilibrado de vagas.\n\n" + FormaSpells.description(arena.player.class_id if arena.mode != "menu" and arena.player != null else arena.selected_class)
 	help_scroll_max = scrollable(text, Rect2(p + Vector2(12, 40), rect.size - Vector2(24, 122)), help_scroll)
 	if help_scroll_max > 0: label("Role ou use as setas para ler mais", p.x + 12, rect.end.y - 69, 12, P.MUTED)
 	button("close_help", "Entendi  [Esc]", Rect2(p.x + 12, rect.end.y - 46, rect.size.x - 24, 40), true)

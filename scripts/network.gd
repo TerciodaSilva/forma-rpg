@@ -228,7 +228,7 @@ func remove_combatant(room: FormaArena, actor: FormaActor) -> void:
 func refill_room(number: int) -> void:
 	var room: FormaArena = rooms[number]
 	room.rival_count = capacity - occupants(number)
-	room.room_label = "SALA %d · %d humanos + %d bots" % [number, occupants(number), room.rival_count]
+	room.room_label = "SALA %d" % number
 	var bots = room.actors.filter(func(actor: FormaActor) -> bool: return not actor.is_player and not actor.is_boss)
 	while bots.size() > room.rival_count:
 		remove_combatant(room, bots.pop_back())
@@ -316,7 +316,6 @@ func apply_command(id: int, action: String, value: int) -> void:
 		"skill": room.use_skill(actor)
 		"shield": room.use_shield(actor)
 		"dash": room.dash(actor, actor.input_direction)
-		"upgrade": room.choose_upgrade(value, actor)
 	room.mode = previous
 
 func pack_entity(entity: RefCounted) -> Dictionary:
@@ -364,7 +363,7 @@ func receive_snapshot(actor_id: int, payload: PackedByteArray) -> void:
 	room_id = int(state.room_id)
 	human_count = int(state.human_count)
 	capacity = int(state.capacity)
-	arena.room_label = "SALA %d · %d humanos + %d bots" % [room_id, human_count, capacity - human_count]
+	arena.room_label = "SALA %d" % room_id
 	var previous_player = arena.player
 	var first = not arena.networked
 	arena.networked = true

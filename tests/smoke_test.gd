@@ -148,9 +148,9 @@ func test_progression() -> void:
 	arena.add_orb(arena.player.pos, 40)
 	arena.collect_orbs(0.1)
 	check(arena.collected == 1 and arena.player.mass == 60, "Orb collects and adds mass")
-	check(arena.player.radius() > radius_before and arena.player.speed() < speed_before, "Growth increases radius and decreases speed")
-	check(arena.player.level == 2 and arena.pending_upgrades == 1, "Level milestone queues upgrade")
-	arena.show_upgrade()
+	check(arena.player.radius() > radius_before and (arena.player.speed() < speed_before or arena.player.speed_multiplier > 1.0), "Growth increases radius and preserves speed balance")
+	check(arena.player.level == 2 and arena.pending_upgrades == 0 and arena.upgrade_options.is_empty(), "Level milestone applies an automatic upgrade")
+	check(arena.player.damage_bonus > 0 or arena.player.max_hp > FormaClasses.DATA[arena.player.class_id].hp or arena.player.speed_multiplier > 1.0 or arena.player.pickup_bonus > 0 or arena.player.regeneration > 0, "Automatic upgrade changes a visible stat")
 	var elapsed = arena.elapsed
 	arena.actors = [arena.player] # Isolate input from enemy knockback.
 	var position_before = arena.player.pos
@@ -158,19 +158,14 @@ func test_progression() -> void:
 	arena.attack_held = true
 	arena.player.shield_timer = 10
 	arena.step(0.05)
-	check(arena.elapsed > elapsed and arena.mode == "playing", "Pending upgrade does not pause simulation")
-	check(arena.player.pos.x > position_before.x and arena.player.attack_timer > 0, "Movement and attacks remain active with pending upgrades")
-	check(arena.use_skill(arena.player), "Skills remain available while choosing an upgrade")
+	check(arena.elapsed > elapsed and arena.mode == "playing", "Automatic upgrade does not pause simulation")
+	check(arena.player.pos.x > position_before.x and arena.player.attack_timer > 0, "Movement and attacks remain active after automatic upgrade")
+	check(arena.use_skill(arena.player), "Skills remain available after automatic upgrade")
 	arena.dash()
-	check(arena.player.dash_cooldown > 0, "Dash remains available with upgrade panel")
-	check(arena.upgrade_options.size() == 3 and arena.upgrade_options[0] != arena.upgrade_options[1], "Unique upgrade options")
-	arena.choose_upgrade(0)
-	check(arena.mode == "playing" and arena.pending_upgrades == 0, "Upgrade preserves live play")
+	check(arena.player.dash_cooldown > 0, "Dash remains available after automatic upgrade")
 	for i in range(5):
 		arena.mode = "playing"
-		arena.pending_upgrades = 1
-		arena.upgrade_options = [i]
-		arena.choose_upgrade(0)
+		arena.apply_upgrade(arena.player, i)
 	check(arena.player.damage_bonus >= 10 and arena.player.max_hp > 130 and arena.player.speed_multiplier > 1 and arena.player.pickup_bonus >= 55 and arena.player.regeneration >= 2.5, "All five upgrades affect stats")
 
 func test_lifecycle() -> void:
@@ -196,8 +191,6 @@ func test_simulation() -> void:
 	arena.player.shield_timer = 9999
 	arena.auto_attack = true
 	for frame in range(5400):
-		while arena.pending_upgrades > 0:
-			arena.choose_upgrade(0)
 		arena.move_input = Vector2.from_angle(frame * 0.004)
 		arena.aim_point = arena.player.pos + arena.move_input * 300
 		arena.step(1.0 / 30.0)
@@ -400,7 +393,7 @@ func test_director() -> void:
 	arena.networked = true
 	var remote = arena.add_actor(1, Vector2(100, 100), "Remote", true)
 	arena.gain_mass(remote, 60)
-	check(remote.pending_upgrades > 0 and arena.player.pending_upgrades == 0, "Human progression is independent")
+	check(remote.pending_upgrades == 0 and remote.upgrade_options.is_empty() and (remote.damage_bonus > 0 or remote.max_hp > FormaClasses.DATA[remote.class_id].hp or remote.speed_multiplier > 1.0 or remote.pickup_bonus > 0 or remote.regeneration > 0), "Human progression applies upgrades independently")
 	arena.networked = false
 
 func test_progressive_cost() -> void:
@@ -418,12 +411,9 @@ func test_progressive_cost() -> void:
 	arena.gain_mass(arena.player, 35)
 	check(arena.player.level == 2 and arena.next_level_mass == 119, "New threshold uses progressive cost")
 	check(is_zero_approx(FormaProgression.progress(arena.player)), "XP bar starts at zero on exact level boundary")
-	var options = arena.upgrade_options.duplicate()
 	arena.gain_mass(arena.player, 64)
-	check(arena.player.level == 3 and arena.pending_upgrades == 2, "Large farm accumulates upgrade choices")
-	check(arena.upgrade_options == options, "New levels do not reroll visible choices")
-	arena.choose_upgrade(0)
-	check(arena.pending_upgrades == 1 and arena.upgrade_options.size() == 3 and arena.mode == "playing", "Queued upgrades stay available without blocking")
+	check(arena.player.level == 3 and arena.pending_upgrades == 0, "Large farm applies every upgrade automatically")
+	check(arena.upgrade_options.is_empty(), "Automatic upgrades leave no choices to select")
 
 func test_responsive_layout() -> void:
 	for size in [Vector2(640, 400), Vector2(390, 550), Vector2(320, 480), Vector2(390, 844), Vector2(844, 390), Vector2(768, 1024), Vector2(1280, 720), Vector2(1920, 1080), Vector2(2560, 1080)]:

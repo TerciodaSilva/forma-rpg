@@ -195,9 +195,6 @@ func _input(event: InputEvent) -> void:
 			elif key == KEY_H:
 				handle_action("help")
 		"playing":
-			if key >= KEY_1 and key <= KEY_3 and arena.pending_upgrades > 0:
-				player_command("upgrade", key - KEY_1)
-				return
 			match key:
 				KEY_Q: player_command("skill")
 				KEY_R: player_command("shield")
@@ -283,7 +280,6 @@ func player_command(action: String, value: int = 0) -> void:
 			"skill": arena.use_skill(arena.player)
 			"shield": arena.use_shield(arena.player)
 			"dash": arena.dash()
-			"upgrade": arena.choose_upgrade(value)
 
 func on_focus_lost() -> void:
 	if network.active:

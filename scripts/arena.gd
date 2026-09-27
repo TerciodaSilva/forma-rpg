@@ -201,8 +201,6 @@ func step(delta: float) -> void:
 			spawn_rival()
 	if mode == "playing" and not boss_spawned and (elapsed >= next_boss_at or (encounters == 0 and FormaDirector.leading_mass(self) >= 500)):
 		spawn_boss()
-	if not networked and mode == "playing" and pending_upgrades > 0 and upgrade_options.is_empty():
-		show_upgrade()
 
 func safe_spawn(point: Vector2) -> bool:
 	for actor in actors:
@@ -311,9 +309,7 @@ func gain_mass(actor: FormaActor, amount: float) -> void:
 		actor.max_hp += 8
 		actor.hp = minf(actor.max_hp, actor.hp + 25)
 		actor.next_level_mass += FormaProgression.cost(actor.level)
-		actor.pending_upgrades += 1
-	if actor.pending_upgrades > 0 and actor.upgrade_options.is_empty():
-		roll_upgrades(actor)
+		apply_random_upgrade(actor)
 
 func attack(actor: FormaActor) -> void:
 	if actor.attack_timer > 0 or actor.shield_skill_timer > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
@@ -670,24 +666,18 @@ func draw_boss_kind() -> int:
 	return last_boss_kind
 
 func show_upgrade() -> void:
-	if player != null and player.alive and pending_upgrades > 0 and upgrade_options.is_empty():
-		roll_upgrades(player)
+	# Improvements are applied automatically when the level is reached.
+	pass
 
-func roll_upgrades(actor: FormaActor) -> void:
-	actor.upgrade_options.clear()
-	var candidates: Array[int] = [0, 1, 2, 3, 4]
-	for i in range(3):
-		var index = rng.randi_range(0, candidates.size() - 1)
-		actor.upgrade_options.append(candidates.pop_at(index))
-	sound_requested.emit("level")
-	changed.emit()
-
-func choose_upgrade(slot: int, actor: FormaActor = null) -> void:
-	if actor == null:
-		actor = player
-	if actor == null or not actor.alive or actor.pending_upgrades <= 0 or mode != "playing" or slot < 0 or slot >= actor.upgrade_options.size():
+func apply_random_upgrade(actor: FormaActor) -> void:
+	if actor == null or not actor.alive:
 		return
-	match UPGRADES[actor.upgrade_options[slot]].kind:
+	apply_upgrade(actor, rng.randi_range(0, UPGRADES.size() - 1))
+
+func apply_upgrade(actor: FormaActor, option: int) -> void:
+	if actor == null or not actor.alive or option < 0 or option >= UPGRADES.size():
+		return
+	match UPGRADES[option].kind:
 		"power": actor.damage_bonus += 10.0
 		"health":
 			actor.max_hp += 35
@@ -695,10 +685,11 @@ func choose_upgrade(slot: int, actor: FormaActor = null) -> void:
 		"speed": actor.speed_multiplier += 0.12
 		"magnet": actor.pickup_bonus += 55
 		"regen": actor.regeneration += 2.5
-	actor.pending_upgrades -= 1
+	actor.pending_upgrades = 0
 	actor.upgrade_options.clear()
-	if actor.pending_upgrades > 0:
-		roll_upgrades(actor)
+	if actor.is_player:
+		announce("Melhoria automática: %s" % UPGRADES[option].title, 3.5)
+		sound_requested.emit("level")
 	changed.emit()
 
 func announce(message: String, duration: float = 4.0) -> void:

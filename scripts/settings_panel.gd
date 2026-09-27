@@ -57,7 +57,7 @@ func _ready() -> void:
 	resize_panel()
 	add_label(box, "CONFIGURAÇÃO DA ARENA", FormaPalette.GOLD)
 	add_label(box, "Multiplayer · todos contra todos")
-	add_label(box, "Até 10 participantes · bots preenchem as vagas", FormaPalette.MUTED)
+	add_label(box, "Até 10 participantes por sala", FormaPalette.MUTED)
 	nickname = LineEdit.new()
 	nickname.placeholder_text = "Seu nome"
 	nickname.text = "Viajante"
@@ -90,7 +90,7 @@ func _ready() -> void:
 	difficulty.select(arena.difficulty)
 	box.add_child(difficulty)
 	bots = OptionButton.new()
-	bots.add_item("Bots automáticos nas vagas livres", 0)
+	bots.add_item("Preenchimento automático de vagas", 0)
 	bots.select(0)
 	bots.disabled = true
 	box.add_child(bots)
@@ -103,7 +103,7 @@ func _ready() -> void:
 		network.host(int(port.value), int(slots.value)))
 	host_button.disabled = OS.has_feature("web")
 	if OS.has_feature("web"):
-		add_label(box, "O servidor cria salas e troca bots por jogadores automaticamente.", FormaPalette.MUTED)
+		add_label(box, "O servidor cria salas e equilibra as vagas automaticamente.", FormaPalette.MUTED)
 	message = Label.new()
 	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message.custom_minimum_size.y = 50
