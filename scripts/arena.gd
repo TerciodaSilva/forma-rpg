@@ -524,7 +524,12 @@ func can_absorb(big: FormaActor, small: FormaActor) -> bool:
 func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: bool = true) -> void:
 	if not actor.alive or actor.shield_timer > 0 or allies(actor, source):
 		return
-	var reduction = (0.82 if actor.class_id == 1 and not actor.is_boss else 1.0) * (0.78 if FormaBosses.Kind.GOLEM in actor.boons else 1.0)
+	var size_reduction = 1.0
+	if not actor.is_boss:
+		# Growth now also improves durability. The visible radius is used so the
+		# mitigation follows the character's actual size, with a 45% floor.
+		size_reduction = clampf(1.0 - maxf(0.0, actor.radius() - 25.0) * 0.008, 0.55, 1.0)
+	var reduction = size_reduction * (0.82 if actor.class_id == 1 and not actor.is_boss else 1.0) * (0.78 if FormaBosses.Kind.GOLEM in actor.boons else 1.0)
 	var actual_damage = minf(actor.hp, amount * reduction)
 	actor.hp -= amount * reduction
 	FormaBoonSystem.on_hit(self, actor, source, actual_damage, show_number)

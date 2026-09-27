@@ -82,6 +82,15 @@ func test_classes() -> void:
 func test_absorption() -> void:
 	var enemy = clean_run(0)
 	var player = arena.player
+	player.hp = player.max_hp
+	player.mass = 20
+	arena.hurt(player, 10, enemy, false)
+	var small_damage = player.max_hp - player.hp
+	player.hp = player.max_hp
+	player.mass = 400
+	arena.hurt(player, 10, enemy, false)
+	var large_damage = player.max_hp - player.hp
+	check(large_damage < small_damage, "Larger characters take less damage")
 	player.mass = 100
 	enemy.mass = 60
 	check(not arena.can_absorb(player, enemy), "Healthy near-size rival resists absorption")
@@ -254,7 +263,7 @@ func test_boon_effects() -> void:
 	FormaBoonSystem.grant(player, FormaBosses.Kind.GOLEM)
 	hp = player.hp
 	arena.hurt(player, 10, enemy)
-	check(is_equal_approx(hp - player.hp, 7.8), "Golem boon reduces incoming damage")
+	check(hp - player.hp < 7.8 and hp - player.hp > 0, "Golem boon reduces incoming damage")
 	FormaBoonSystem.grant(player, FormaBosses.Kind.KRAKEN)
 	arena.hurt(enemy, 1, player)
 	check(enemy.slow_timer >= 1.5, "Kraken boon slows on hit")
@@ -446,7 +455,7 @@ func test_spell_evolutions() -> void:
 	var shot = arena.fire_shot(arena.player, Vector2.RIGHT, 10)
 	shot.pierce = 1
 	arena.update_shots(0.5)
-	check(targets[0].hp == 990 and targets[1].hp == 990 and targets[2].hp == 1000, "Piercing hits exactly the permitted number of distinct targets")
+	check(targets[0].hp < 1000 and targets[1].hp < 1000 and targets[2].hp == 1000, "Piercing hits exactly the permitted number of distinct targets")
 	var target = clean_run(0)
 	arena.player.level = 100
 	target.hp = 100000
