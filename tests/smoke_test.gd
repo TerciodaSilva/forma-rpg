@@ -126,8 +126,14 @@ func test_absorption() -> void:
 	enemy.mass = 90
 	player.hp = player.max_hp
 	check(not arena.can_absorb(enemy, player), "Healthy player cannot be instantly absorbed")
-	player.hp = player.max_hp * 0.4
-	check(arena.can_absorb(enemy, player), "Weakened player can be absorbed")
+	player.hp = player.max_hp * 0.2
+	check(not arena.can_absorb(enemy, player), "New player is protected from early absorption")
+	arena.elapsed = 60
+	player.mass = 100
+	enemy.mass = 190
+	check(arena.can_absorb(enemy, player) == false, "Wounded player needs a stronger size advantage")
+	enemy.mass = 201
+	check(arena.can_absorb(enemy, player), "Critically wounded developed player can be absorbed")
 	player.hp = player.max_hp
 	player.mass = 100
 	enemy.mass = 30

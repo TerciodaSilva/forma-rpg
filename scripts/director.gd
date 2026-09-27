@@ -41,6 +41,10 @@ static func equip_rival(arena: FormaArena, rival: FormaActor) -> void:
 	rival.threat_tier = arena.threat
 	var farm_share = 0.8 if rival.elite else arena.rng.randf_range(0.18, 0.42)
 	rival.mass += pressure * 28 + leading_mass(arena) * farm_share * minf(1, arena.elapsed / 90.0)
+	# Keep new rivals close enough to the current player lead for a fair catch-up.
+	# They can still grow by farming, but they do not enter as an immediate
+	# absorption threat for a fresh player.
+	rival.mass = minf(rival.mass, leading_mass(arena) * 1.25 + 40.0)
 	rival.max_hp *= 1.0 + pressure * (0.65 if rival.elite else 0.3)
 	rival.damage_multiplier = 1.0 + pressure * (0.24 if rival.elite else 0.14)
 	rival.speed_multiplier = 1.0 + minf(0.28, pressure * 0.025)
