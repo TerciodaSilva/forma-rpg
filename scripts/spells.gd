@@ -1,6 +1,8 @@
 class_name FormaSpells
 extends RefCounted
 
+const DAMAGE_SCALE: float = 0.35
+
 # Ten automatic evolutions, at levels 10, 20, ... 100; the initial skill is tier 0.
 const NAMES = [
 	["Nova ampliada", "Pulso astral", "Ignição arcana", "Estilhaços estelares", "Gravidade zero", "Eco da supernova", "Prisão cósmica", "Tempestade astral", "Colapso dimensional", "Big Bang"],
@@ -35,7 +37,9 @@ static func power(rank: int) -> float:
 
 static func cast(arena: FormaArena, actor: FormaActor) -> void:
 	var rank = tier(actor.level)
-	var strength = power(rank) * actor.damage_multiplier
+	# Ultimates should create space and pressure without deleting a full-health rival.
+	# Healing, shielding and control remain unchanged; only spell damage is reduced.
+	var strength = power(rank) * actor.damage_multiplier * DAMAGE_SCALE
 	var color = actor.tint()
 	actor.skill_timer = FormaClasses.DATA[actor.class_id].cooldown * (1.0 - rank * 0.025)
 	match actor.class_id:
