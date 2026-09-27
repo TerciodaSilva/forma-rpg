@@ -75,7 +75,7 @@ func test_classes() -> void:
 				arena.hurt(player, 500, enemy)
 				check(player.hp == hp, "Paladin shield blocks damage")
 			2: check(enemy.hp < hp_before and player.dash_timer > 0, "Knight charge damages and moves")
-			3: check(arena.shots.size() >= 7, "Archer seven arrow fan")
+			3: check(arena.shots.size() >= 4, "Archer controlled arrow fan")
 			4:
 				arena.update_effects(0.1)
 				check(player.hp > player.max_hp * 0.5 and enemy.hp < hp_before and enemy.slow_timer > 0, "Druid grove heals, damages, slows")
@@ -444,7 +444,7 @@ func test_spell_evolutions() -> void:
 			if kind in [0, 2]: check(target.hp < 100000, "Evolved area/charge deals actual damage")
 			if kind == 1: check(actor.hp > actor.max_hp * 0.4 and actor.shield_timer > 2.5, "Evolved paladin heals and shields")
 			if kind == 3:
-				check(arena.shots.size() >= 7 + rank * 2, "Archer creates stronger volleys")
+				check(arena.shots.size() >= 4 + rank, "Archer creates controlled volleys")
 				if rank >= 2: check(arena.shots[0].pierce > 0, "Evolved arrows pierce")
 				if rank >= 4: check(arena.shots[0].homing > 0, "Evolved arrows seek a real target")
 			if kind == 4:

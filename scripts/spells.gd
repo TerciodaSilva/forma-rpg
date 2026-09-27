@@ -76,8 +76,8 @@ static func cast(arena: FormaArena, actor: FormaActor) -> void:
 			if rank >= 6: burst(arena, actor, destination, 100 + rank * 12, 22 * strength)
 			if rank >= 9: echo(arena, actor, destination, 110 + rank * 12, 18 * strength, 3 if rank == 10 else 1)
 		3:
-			var count = 7 + rank * 2
-			var volleys = 3 if rank == 10 else (2 if rank >= 6 else 1)
+			var count = 4 + rank
+			var volleys = 2 if rank >= 8 else 1
 			for volley in range(volleys):
 				for index in range(count):
 					var angle = (index - (count - 1) / 2.0) * (0.14 if rank == 0 else 0.075)
