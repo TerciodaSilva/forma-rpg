@@ -39,13 +39,16 @@
 			window.adsbygoogle.push(options);
 		};
 
-		const script = document.createElement('script');
-		script.async = true;
-		script.crossOrigin = 'anonymous';
-		script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(PUBLISHER_ID);
-		script.dataset.adClient = PUBLISHER_ID;
-		script.dataset.adFrequencyHint = AD_FREQUENCY_HINT;
-		document.head.appendChild(script);
+		const existingScript = document.querySelector('script[data-ad-client="' + PUBLISHER_ID + '"]');
+		if (!existingScript) {
+			const script = document.createElement('script');
+			script.async = true;
+			script.crossOrigin = 'anonymous';
+			script.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(PUBLISHER_ID);
+			script.dataset.adClient = PUBLISHER_ID;
+			script.dataset.adFrequencyHint = AD_FREQUENCY_HINT;
+			document.head.appendChild(script);
+		}
 
 		window.adConfig({
 			preloadAdBreaks: 'auto',
