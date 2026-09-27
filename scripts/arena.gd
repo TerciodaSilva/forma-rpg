@@ -140,7 +140,9 @@ func spawn_rival() -> void:
 	var rival = add_actor(rng.randi_range(0, 4), point, NAMES[rng.randi_range(0, NAMES.size() - 1)])
 	rival.mass = rng.randf_range(15, 75)
 	FormaDirector.equip_rival(self, rival)
-	rival.level = 1 + int(rival.mass / 65)
+	# Rival levels follow the same gradual curve as the director. Using mass / 65
+	# made a late elite reach hundreds of levels and deal instant-kill damage.
+	rival.level = 1 + int(sqrt(rival.mass / 40.0))
 	rival.max_hp += rival.level * 8
 	rival.hp = rival.max_hp
 	rival.skill_timer = rng.randf_range(3, 10)
@@ -542,19 +544,24 @@ func can_absorb(big: FormaActor, small: FormaActor) -> bool:
 func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: bool = true) -> void:
 	if not actor.alive or actor.shield_timer > 0 or allies(actor, source):
 		return
+	var capped_amount = amount
+	if actor.is_player and not actor.is_boss:
+		# A single projectile or elite strike may not delete a player's full life.
+		# Repeated hits remain dangerous, but every hit leaves room to react.
+		capped_amount = minf(capped_amount, actor.max_hp * 0.45)
 	var size_reduction = 1.0
 	if not actor.is_boss:
 		# Growth now also improves durability. The visible radius is used so the
 		# mitigation follows the character's actual size, with a 45% floor.
 		size_reduction = clampf(1.0 - maxf(0.0, actor.radius() - 25.0) * 0.008, 0.55, 1.0)
 	var reduction = size_reduction * (0.82 if actor.class_id == 1 and not actor.is_boss else 1.0) * (0.78 if FormaBosses.Kind.GOLEM in actor.boons else 1.0)
-	var actual_damage = minf(actor.hp, amount * reduction)
-	actor.hp -= amount * reduction
+	var actual_damage = minf(actor.hp, capped_amount * reduction)
+	actor.hp -= capped_amount * reduction
 	FormaBoonSystem.on_hit(self, actor, source, actual_damage, show_number)
 	actor.flash = 0.12
 	if show_number:
 		var effect = add_effect(actor.pos - Vector2(0, actor.radius()), 1, FormaPalette.TEXT, "text", 0.7)
-		effect.label = str(int(amount))
+		effect.label = str(int(capped_amount))
 		effect.velocity = Vector2(0, -45)
 	if actor.is_player and show_number:
 		sound_requested.emit("hit")

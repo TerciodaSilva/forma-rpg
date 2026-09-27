@@ -178,6 +178,10 @@ func test_lifecycle() -> void:
 	check(arena.player.dash_timer > 0 and arena.player.dash_cooldown > 0, "Dodge activates with cooldown")
 	arena.player.shield_timer = 0
 	arena.hurt(arena.player, 999, enemy)
+	check(arena.player.hp > 0, "Player damage has a hit-kill safety cap")
+	arena.hurt(arena.player, 999, enemy)
+	arena.hurt(arena.player, 999, enemy)
+	arena.hurt(arena.player, 999, enemy)
 	check(arena.mode == "lost" and not arena.player.alive, "Death opens defeat screen")
 	arena.new_run(3)
 	check(arena.mode == "playing" and arena.kills == 0 and arena.player.alive and arena.player.class_id == 3, "Restart resets run")
@@ -303,6 +307,7 @@ func test_boon_effects() -> void:
 	check(arena.shots.size() == 8, "Djinn boon adds eight bolts to skill")
 	FormaBoonSystem.grant(player, FormaBosses.Kind.PHOENIX)
 	player.shield_timer = 0
+	player.hp = player.max_hp * 0.2
 	arena.hurt(player, 999, enemy)
 	check(player.alive and player.phoenix_cooldown == 60 and player.hp > 0, "Phoenix boon prevents lethal hit")
 	player.shield_timer = 0
