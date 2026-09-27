@@ -34,6 +34,7 @@ var think_timer: float = 0.0
 var destination: Vector2 = Vector2.ZERO
 var level: int = 1
 var damage_multiplier: float = 1.0
+var damage_bonus: float = 0.0
 var speed_multiplier: float = 1.0
 var pickup_bonus: float = 0.0
 var regeneration: float = 0.0
@@ -65,7 +66,7 @@ func speed() -> float:
 	return maxf(110.0, base - (radius() - 25.0) * 0.62) * speed_multiplier * (0.48 if slow_timer > 0 else 1.0)
 
 func damage() -> float:
-	return float(FormaClasses.DATA[class_id].damage) * (1.0 + (level - 1) * 0.09) * damage_multiplier
+	return float(FormaClasses.DATA[class_id].damage) * (1.0 + (level - 1) * 0.09) + damage_bonus
 
 func setup(new_id: int, kind: int, point: Vector2, title: String, player: bool = false) -> void:
 	id = new_id

@@ -7,7 +7,7 @@ signal sound_requested(cue: String)
 const SIZE = Vector2(3600, 2800)
 const NAMES = ["Nyx", "Orion", "Íris", "Atlas", "Lume", "Kael", "Vega", "Solis", "Flora", "Aster", "Rune", "Nox", "Lyra", "Oberon", "Elara", "Thorn"]
 const UPGRADES = [
-	{"title": "Poder primordial", "subtitle": "OFENSIVA", "body": "+22% de dano em todos os ataques.", "kind": "power"},
+	{"title": "Poder primordial", "subtitle": "OFENSIVA", "body": "+10 de dano nos ataques básicos.", "kind": "power"},
 	{"title": "Coração de pedra", "subtitle": "VITALIDADE", "body": "+35 de vida máxima e cura completa.", "kind": "health"},
 	{"title": "Passos de vento", "subtitle": "MOBILIDADE", "body": "+12% de velocidade de movimento.", "kind": "speed"},
 	{"title": "Ímã de essência", "subtitle": "EXPANSÃO", "body": "+55 px de alcance de coleta.", "kind": "magnet"},
@@ -654,7 +654,7 @@ func choose_upgrade(slot: int, actor: FormaActor = null) -> void:
 	if actor == null or not actor.alive or actor.pending_upgrades <= 0 or mode != "playing" or slot < 0 or slot >= actor.upgrade_options.size():
 		return
 	match UPGRADES[actor.upgrade_options[slot]].kind:
-		"power": actor.damage_multiplier += 0.22
+		"power": actor.damage_bonus += 10.0
 		"health":
 			actor.max_hp += 35
 			actor.hp = actor.max_hp

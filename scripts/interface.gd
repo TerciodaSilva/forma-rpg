@@ -235,7 +235,7 @@ func draw_upgrades() -> void:
 	button("toggle_upgrades", "+" if upgrades_collapsed else "−", Rect2(rect.end.x - 38, rect.position.y + 6, 30, 28), false, P.GOLD, 16)
 	if upgrades_collapsed: return
 	if screen_size().x < 600 and screen_size().y < 650:
-		var summaries = ["+22% dano", "+35 PV + cura", "+12% veloc.", "+55 coleta", "+2,5 PV/s"]
+		var summaries = ["+10 dano", "+35 PV + cura", "+12% veloc.", "+55 coleta", "+2,5 PV/s"]
 		var width = (rect.size.x - 24) / 3
 		for i in range(arena.upgrade_options.size()):
 			var option = arena.upgrade_options[i]
@@ -247,7 +247,7 @@ func draw_upgrades() -> void:
 			fitted(summaries[option], cell.position + Vector2(6, 37), cell.size.x - 12, 11, P.MUTED)
 		return
 	var row_height = 38.0 if screen_size().y < 500 else 46.0
-	var descriptions = ["+22% de dano", "+35 PV e cura completa", "+12% de velocidade", "+55 px de coleta", "+2,5 PV por segundo"]
+	var descriptions = ["+10 de dano básico", "+35 PV e cura completa", "+12% de velocidade", "+55 px de coleta", "+2,5 PV por segundo"]
 	for i in range(arena.upgrade_options.size()):
 		var option = arena.upgrade_options[i]
 		var row = Rect2(rect.position + Vector2(8, 40 + i * (row_height + 4)), Vector2(rect.size.x - 16, row_height))

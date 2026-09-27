@@ -127,7 +127,7 @@ func test_progression() -> void:
 		arena.pending_upgrades = 1
 		arena.upgrade_options = [i]
 		arena.choose_upgrade(0)
-	check(arena.player.damage_multiplier > 1 and arena.player.max_hp > 130 and arena.player.speed_multiplier > 1 and arena.player.pickup_bonus >= 55 and arena.player.regeneration >= 2.5, "All five upgrades affect stats")
+	check(arena.player.damage_bonus >= 10 and arena.player.max_hp > 130 and arena.player.speed_multiplier > 1 and arena.player.pickup_bonus >= 55 and arena.player.regeneration >= 2.5, "All five upgrades affect stats")
 
 func test_lifecycle() -> void:
 	var enemy = clean_run(0)
