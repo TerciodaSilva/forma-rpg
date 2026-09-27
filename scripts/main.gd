@@ -200,6 +200,7 @@ func _input(event: InputEvent) -> void:
 				return
 			match key:
 				KEY_Q: player_command("skill")
+				KEY_R: player_command("shield")
 				KEY_SPACE: player_command("dash")
 				KEY_ESCAPE: handle_action("pause")
 				KEY_E: arena.mouse_move = not arena.mouse_move
@@ -280,6 +281,7 @@ func player_command(action: String, value: int = 0) -> void:
 	else:
 		match action:
 			"skill": arena.use_skill(arena.player)
+			"shield": arena.use_shield(arena.player)
 			"dash": arena.dash()
 			"upgrade": arena.choose_upgrade(value)
 

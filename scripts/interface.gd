@@ -171,7 +171,8 @@ func draw_hud() -> void:
 	var data = FormaClasses.DATA[actor.class_id]
 	draw_skill_slot(Rect2(bar.position, Vector2(slot_width, bar.size.y)), "CLIQUE", data.attack, 0, color)
 	draw_skill_slot(Rect2(bar.position + Vector2(slot_width + 8, 0), Vector2(slot_width, bar.size.y)), "Q · %d/10" % FormaSpells.tier(actor.level), FormaSpells.title(actor), actor.skill_timer, color)
-	draw_skill_slot(Rect2(bar.position + Vector2((slot_width + 8) * 2, 0), Vector2(slot_width, bar.size.y)), "ESPAÇO", "Esquiva", actor.dash_cooldown, P.TEXT)
+	draw_skill_slot(Rect2(bar.position + Vector2((slot_width + 8) * 2, 0), Vector2(slot_width, bar.size.y)), "R", "Escudo", maxf(actor.shield_skill_timer, actor.shield_skill_cooldown), P.GOLD)
+	draw_skill_slot(Rect2(bar.position + Vector2((slot_width + 8) * 3, 0), Vector2(slot_width, bar.size.y)), "ESPAÇO", "Esquiva", actor.dash_cooldown, P.TEXT)
 	if size.x >= 700 and size.y >= 520:
 		label("WASD mover · Q habilidade · Espaço esquiva · F autoataque", p, bar.position.y - 24, 12, P.MUTED)
 	if size.x >= 950 and arena.pending_upgrades == 0 and size.y >= 600:
@@ -225,7 +226,7 @@ func draw_skill_slot(rect: Rect2, key: String, title: String, cooldown: float, c
 	if cooldown > 0: label("%.1fs" % cooldown, rect.end.x - 44, rect.position.y + 8, 11, P.TEXT)
 	fitted(title, rect.position + Vector2(10, 30), rect.size.x - 20, 14, color if cooldown <= 0 else P.MUTED)
 	if cooldown > 0:
-		var maximum: float = 4 if key == "ESPAÇO" else FormaClasses.DATA[arena.player.class_id].cooldown
+		var maximum: float = 4 if key == "ESPAÇO" else (6 if key == "R" else FormaClasses.DATA[arena.player.class_id].cooldown)
 		D.bar(self, Rect2(rect.position + Vector2(10, 54), Vector2(rect.size.x - 20, 2)), 1 - cooldown / maximum, color)
 
 func draw_upgrades() -> void:
@@ -297,7 +298,7 @@ func draw_help() -> void:
 	var rect = FormaLayout.modal(screen_size(), Vector2(720, 620))
 	var p = rect.position
 	label("GUIA DO VIAJANTE", p.x + 12, p.y + 6, 13, P.GOLD)
-	var text = "WASD / Setas · Mover\nMouse / clique · Mirar e atacar\nQ / clique direito · Habilidade\nEspaço · Esquiva\n1–3 · Escolher melhoria sem parar\nE / F · Mover pelo mouse / autoataque\nB · Bestiário   Esc · Pausa   M · Som\n\nColete essência para evoluir. Cada próximo nível custa mais. As melhorias ficam no canto; você continua lutando.\n\nChefes concedem dons ao golpe final. Morrer elimina os dons. Escudos impedem absorção. No multiplayer, os menus não pausam a sala."
+	var text = "WASD / Setas · Mover\nMouse / clique · Mirar e atacar\nQ / clique direito · Habilidade\nR · Escudo (1,5 s, sem atacar)\nEspaço · Esquiva\n1–3 · Escolher melhoria sem parar\nE / F · Mover pelo mouse / autoataque\nB · Bestiário   Esc · Pausa   M · Som\n\nColete essência para evoluir. Cada próximo nível custa mais. As melhorias ficam no canto; você continua lutando.\n\nChefes concedem dons ao golpe final. Morrer elimina os dons. Escudos impedem absorção. No multiplayer, os menus não pausam a sala."
 	text += "\n\nSalas automáticas: até 10 participantes, com bots nas vagas livres. Jogadores substituem bots ao entrar.\n\n" + FormaSpells.description(arena.player.class_id if arena.mode != "menu" and arena.player != null else arena.selected_class)
 	help_scroll_max = scrollable(text, Rect2(p + Vector2(12, 40), rect.size - Vector2(24, 122)), help_scroll)
 	if help_scroll_max > 0: label("Role ou use as setas para ler mais", p.x + 12, rect.end.y - 69, 12, P.MUTED)

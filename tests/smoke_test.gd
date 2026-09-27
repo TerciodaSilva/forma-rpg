@@ -12,6 +12,7 @@ func _ready() -> void:
 	test_progressive_cost()
 	test_director()
 	test_classes()
+	test_shield_skill()
 	test_spell_evolutions()
 	test_absorption()
 	test_progression()
@@ -78,6 +79,25 @@ func test_classes() -> void:
 			4:
 				arena.update_effects(0.1)
 				check(player.hp > player.max_hp * 0.5 and enemy.hp < hp_before and enemy.slow_timer > 0, "Druid grove heals, damages, slows")
+
+func test_shield_skill() -> void:
+	for kind in range(5):
+		var enemy = clean_run(kind)
+		var player = arena.player
+		player.shield_skill_cooldown = 0
+		player.aim = Vector2.RIGHT
+		var enemy_hp = enemy.hp
+		var shot_count = arena.shots.size()
+		check(arena.use_shield(player), "Shield activates for class %d" % kind)
+		check(player.shield_skill_timer > 0 and player.shield_timer > 0, "Shield grants brief invulnerability %d" % kind)
+		var hp = player.hp
+		arena.hurt(player, 999, enemy, false)
+		check(player.hp == hp, "Shield blocks damage %d" % kind)
+		arena.attack(player)
+		check(enemy.hp == enemy_hp and arena.shots.size() == shot_count, "Shield blocks attacks %d" % kind)
+		check(not arena.use_skill(player), "Shield blocks offensive skill %d" % kind)
+		arena.step(1.6)
+		check(player.shield_skill_timer == 0 and not arena.use_shield(player), "Shield cooldown starts after protection %d" % kind)
 
 func test_absorption() -> void:
 	var enemy = clean_run(0)

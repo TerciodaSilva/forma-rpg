@@ -314,6 +314,7 @@ func apply_command(id: int, action: String, value: int) -> void:
 	room.mode = "playing"
 	match action:
 		"skill": room.use_skill(actor)
+		"shield": room.use_shield(actor)
 		"dash": room.dash(actor, actor.input_direction)
 		"upgrade": room.choose_upgrade(value, actor)
 	room.mode = previous

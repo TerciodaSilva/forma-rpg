@@ -65,6 +65,9 @@ func _ready() -> void:
 	one.submit_input.rpc_id(1, Vector2.LEFT, a.pos + Vector2.LEFT * 100, true)
 	await get_tree().create_timer(0.12).timeout
 	check(a.pos.x < move_before.x and a.attack_timer > 0, "Remote movement and attacks continue with pending upgrade")
+	one.command("shield")
+	await get_tree().create_timer(0.12).timeout
+	check(a.shield_skill_timer > 0 and a.shield_skill_cooldown > 0, "Remote shield executes authoritatively")
 	var time_before = host.arena.elapsed
 	one.command("upgrade", 0)
 	await get_tree().create_timer(0.12).timeout

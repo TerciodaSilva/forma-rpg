@@ -161,6 +161,8 @@ func step(delta: float) -> void:
 			continue
 		actor.attack_timer = maxf(0, actor.attack_timer - delta)
 		actor.skill_timer = maxf(0, actor.skill_timer - delta)
+		actor.shield_skill_timer = maxf(0, actor.shield_skill_timer - delta)
+		actor.shield_skill_cooldown = maxf(0, actor.shield_skill_cooldown - delta)
 		actor.dash_cooldown = maxf(0, actor.dash_cooldown - delta)
 		actor.shield_timer = maxf(0, actor.shield_timer - delta)
 		actor.slow_timer = maxf(0, actor.slow_timer - delta)
@@ -307,7 +309,7 @@ func gain_mass(actor: FormaActor, amount: float) -> void:
 		roll_upgrades(actor)
 
 func attack(actor: FormaActor) -> void:
-	if actor.attack_timer > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
+	if actor.attack_timer > 0 or actor.shield_skill_timer > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
 		return
 	actor.attack_timer = FormaClasses.DATA[actor.class_id].rate
 	if actor.is_player:
@@ -341,12 +343,23 @@ func fire_shot(actor: FormaActor, direction: Vector2, damage_amount: float) -> F
 	return shot
 
 func use_skill(actor: FormaActor) -> bool:
-	if mode != "playing" or actor.skill_timer > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
+	if mode != "playing" or actor.skill_timer > 0 or actor.shield_skill_timer > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
 		return false
 	if actor.is_player:
 		sound_requested.emit("skill")
 	FormaSpells.cast(self, actor)
 	FormaBoonSystem.on_skill(self, actor)
+	return true
+
+func use_shield(actor: FormaActor) -> bool:
+	if mode != "playing" or actor.shield_skill_cooldown > 0 or not actor.alive or actor.stun_timer > 0 or actor.is_boss:
+		return false
+	actor.shield_skill_timer = 1.5
+	actor.shield_skill_cooldown = 6.0
+	actor.shield_timer = maxf(actor.shield_timer, actor.shield_skill_timer)
+	add_effect(actor.pos, actor.radius() + 24, actor.tint(), "ring", actor.shield_skill_timer)
+	if actor.is_player:
+		sound_requested.emit("skill")
 	return true
 
 func dash(actor: FormaActor = null, direction: Vector2 = Vector2.ZERO) -> void:
