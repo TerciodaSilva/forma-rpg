@@ -162,7 +162,7 @@ func draw_hud() -> void:
 	if size.x >= 1100 and size.y >= 600:
 		draw_leaderboard(Rect2(size.x - p - 232, p + 54, 232, 200))
 		draw_boons(Rect2(p, rect.end.y + 67, 300, 88))
-		draw_status(Rect2(Vector2(p + 312, rect.end.y + 67), Vector2(300, 88)))
+		draw_status(Rect2(p, rect.end.y + 163, 300, 88))
 	else:
 		draw_status(Rect2(p, rect.end.y + 67, summary_width, 88))
 		if size.y >= 600:
