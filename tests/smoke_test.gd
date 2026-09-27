@@ -93,6 +93,15 @@ func test_absorption() -> void:
 	enemy.mass = 30
 	enemy.hp = 1000
 	check(arena.can_absorb(player, enemy), "Large size advantage absorbs healthy rival")
+	player.mass = 30
+	enemy.mass = 90
+	player.hp = player.max_hp
+	check(not arena.can_absorb(enemy, player), "Healthy player cannot be instantly absorbed")
+	player.hp = player.max_hp * 0.4
+	check(arena.can_absorb(enemy, player), "Weakened player can be absorbed")
+	player.hp = player.max_hp
+	player.mass = 100
+	enemy.mass = 30
 	enemy.pos = player.pos
 	arena.resolve_contacts(0.016)
 	check(not enemy.alive and arena.kills == 1 and player.mass > 100, "Absorption grants mass and kill")

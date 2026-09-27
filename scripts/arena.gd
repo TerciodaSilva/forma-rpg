@@ -512,7 +512,14 @@ func resolve_contacts(delta: float) -> void:
 				second.pos += normal * overlap * delta * 3
 
 func can_absorb(big: FormaActor, small: FormaActor) -> bool:
-	return not allies(big, small) and not big.is_boss and not small.is_boss and small.shield_timer <= 0 and big.mass > small.mass * 1.45 and (small.hp < small.max_hp * 0.45 or big.mass > small.mass * 2.2)
+	if allies(big, small) or big.is_boss or small.is_boss or small.shield_timer > 0:
+		return false
+	# A player at full health should not disappear instantly just because a
+	# heavily farmed rival touched them. Absorption remains a finisher once
+	# the player is visibly weakened.
+	if small.is_player and small.hp >= small.max_hp * 0.45:
+		return false
+	return big.mass > small.mass * 1.45 and (small.hp < small.max_hp * 0.45 or big.mass > small.mass * 2.2)
 
 func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: bool = true) -> void:
 	if not actor.alive or actor.shield_timer > 0 or allies(actor, source):
