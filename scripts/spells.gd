@@ -1,8 +1,6 @@
 class_name FormaSpells
 extends RefCounted
 
-const DAMAGE_SCALE: float = 0.35
-
 # Ten automatic evolutions, at levels 10, 20, ... 100; the initial skill is tier 0.
 const NAMES = [
 	["Nova ampliada", "Pulso astral", "Ignição arcana", "Estilhaços estelares", "Gravidade zero", "Eco da supernova", "Prisão cósmica", "Tempestade astral", "Colapso dimensional", "Big Bang"],
@@ -32,14 +30,14 @@ static func description(kind: int) -> String:
 		text += "\nNv. %d · %s — %s." % [(index + 1) * 10, NAMES[kind][index], FEATURES[kind][index]]
 	return text
 
+# Linear damage curve: tier 0 is still a meaningful hit and tier 10 (3.4x) keeps
+# ultimates from deleting a full-health rival.
 static func power(rank: int) -> float:
-	return 1.0 + rank * 0.32 + rank * rank * 0.055
+	return 0.6 + rank * 0.28
 
 static func cast(arena: FormaArena, actor: FormaActor) -> void:
 	var rank = tier(actor.level)
-	# Ultimates should create space and pressure without deleting a full-health rival.
-	# Healing, shielding and control remain unchanged; only spell damage is reduced.
-	var strength = power(rank) * actor.damage_multiplier * DAMAGE_SCALE
+	var strength = power(rank) * actor.damage_multiplier
 	var color = actor.tint()
 	actor.skill_timer = FormaClasses.DATA[actor.class_id].cooldown * (1.0 - rank * 0.025)
 	match actor.class_id:
@@ -95,9 +93,9 @@ static func cast(arena: FormaArena, actor: FormaActor) -> void:
 			var count = 3 if rank >= 9 else (2 if rank >= 6 else 1)
 			for index in range(count):
 				var point = actor.pos if index == 0 else actor.pos + actor.aim.rotated((index - 1) * PI) * (180 + rank * 12)
-				var field = arena.add_effect(point, 185 + rank * 19, color, "grove", 4 + rank * 0.28)
+				var field = arena.add_effect(point, 185 + rank * 14, color, "grove", 4 + rank * 0.28)
 				field.owner_id = actor.id
-				field.damage = 17 * strength
+				field.damage = 14 * strength
 				field.healing = 12 * (1 + rank * 0.24 + (0.6 if rank >= 5 else 0))
 				field.status = "poison" if rank >= 3 else ""
 				field.rooted = rank >= 7

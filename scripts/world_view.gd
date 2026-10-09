@@ -70,7 +70,7 @@ func _draw() -> void:
 			var direction = (screen_size() / 2).direction_to(boss_point)
 			var marker = screen_size() / 2 + direction * maxf(60, minf(screen_size().x, screen_size().y) * 0.35)
 			FormaBossArt.creature(self, marker, 20, arena.boss.boss_kind, clock)
-			D.centered(self, "%s · %d m" % [arena.boss.label, int(arena.player.pos.distance_to(arena.boss.pos) / 10)], marker + Vector2(0, 35), 13, arena.boss.tint())
+			D.styled_center(self, "%s · %d m" % [arena.boss.label, int(arena.player.pos.distance_to(arena.boss.pos) / 10)], marker + Vector2(0, 32), "body-sm", arena.boss.tint())
 
 func visible_point(point: Vector2, extra: float) -> bool:
 	return Rect2(camera - screen_size() / view_zoom() / 2, screen_size() / view_zoom()).grow(extra).has_point(point)
@@ -78,13 +78,13 @@ func visible_point(point: Vector2, extra: float) -> bool:
 func draw_menu_background() -> void:
 	for x in range(32, int(screen_size().x), 48):
 		for y in range(20, int(screen_size().y), 48):
-			draw_circle(Vector2(x, y), 1, Color(P.LINE, 0.42))
+			draw_circle(Vector2(x, y), 1, Color(P.LINE, P.GRID_ALPHA))
 	D.glow(self, Vector2(screen_size().x * 0.82, 170), 120, P.GOLD, 0.65)
 	for i in range(4):
 		D.outline(self, D.polygon(Vector2(screen_size().x * 0.85, 150), 80 + i * 36, 6, clock * 0.025 + i * 0.14), Color(P.GOLD, 0.055 + i * 0.014), 1)
 
 func draw_floor() -> void:
-	draw_rect(Rect2(Vector2.ZERO, FormaArena.SIZE), P.BG.lightened(0.012))
+	draw_rect(Rect2(Vector2.ZERO, FormaArena.SIZE), P.FLOOR)
 	var start_x = maxi(0, int((camera.x - (screen_size().x / 2 + 80) / view_zoom()) / 80) * 80)
 	var end_x = mini(int(FormaArena.SIZE.x), int(camera.x + (screen_size().x / 2 + 80) / view_zoom()))
 	var start_y = maxi(0, int((camera.y - (screen_size().y / 2 + 80) / view_zoom()) / 80) * 80)
@@ -92,8 +92,8 @@ func draw_floor() -> void:
 	for x in range(start_x, end_x + 80, 80):
 		for y in range(start_y, end_y + 80, 80):
 			var point = Vector2(x, y)
-			draw_line(point - Vector2(3, 0), point + Vector2(3, 0), Color(P.LINE, 0.42), 1)
-			draw_line(point - Vector2(0, 3), point + Vector2(0, 3), Color(P.LINE, 0.42), 1)
+			draw_line(point - Vector2(3, 0), point + Vector2(3, 0), Color(P.LINE, P.GRID_ALPHA), 1)
+			draw_line(point - Vector2(0, 3), point + Vector2(0, 3), Color(P.LINE, P.GRID_ALPHA), 1)
 	var landmarks = [Vector2(800, 700), Vector2(2800, 700), Vector2(1800, 1400), Vector2(800, 2200), Vector2(2800, 2200)]
 	for i in range(landmarks.size()):
 		var point: Vector2 = landmarks[i]
@@ -107,7 +107,7 @@ func draw_floor() -> void:
 		for j in range(6):
 			var rune = point + Vector2.from_angle(j * TAU / 6) * 260
 			D.outline(self, D.polygon(rune, 7, 4), Color(color, 0.2), 1)
-		D.centered(self, ["ARQUIVO ARCANO", "CÍRCULO SOLAR", "O NEXO", "JARDIM ANCESTRAL", "RUÍNAS DO VENTO"][i], point + Vector2(0, 185), 13, Color(color, 0.28))
+		D.styled_center(self, ["Arquivo arcano", "Círculo solar", "O Nexo", "Jardim ancestral", "Ruínas do vento"][i], point + Vector2(0, 185), "label", Color(color, P.LANDMARK_ALPHA))
 	draw_rect(Rect2(Vector2(15, 15), FormaArena.SIZE - Vector2(30, 30)), Color(P.DANGER, 0.4), false, 3)
 	draw_rect(Rect2(Vector2(30, 30), FormaArena.SIZE - Vector2(60, 60)), Color(P.DANGER, 0.08), false, 15)
 
@@ -129,19 +129,43 @@ func draw_actor(actor: FormaActor) -> void:
 		var boon_color: Color = FormaBosses.DATA[actor.boons[i]].color
 		var orbit = actor.pos + Vector2.from_angle(clock * 0.3 + i * TAU / actor.boons.size()) * (radius + 18)
 		draw_colored_polygon(D.polygon(orbit, 4, 4), boon_color)
-	if actor.burn_timer > 0:
-		draw_arc(actor.pos, radius + 4, clock, clock + PI * 1.5, 32, P.KNIGHT, 2, true)
-	if actor.poison_timer > 0 or actor.stun_timer > 0:
-		D.outline(self, D.polygon(actor.pos, radius + 5, 6, clock * 0.1), P.DRUID, 2)
+	draw_status_rings(actor, radius)
 	if actor.flash > 0:
 		draw_circle(actor.pos, radius * 0.75, Color(P.WHITE, actor.flash * 3))
-	if actor.shield_timer > 0:
-		draw_arc(actor.pos, radius + 8, 0, TAU, 64, Color(P.GOLD, 0.55 + sin(clock * 8) * 0.15), 2.5, true)
+	draw_nameplate(actor, radius, color)
+
+# One shape and one color per state, on distinct radii so they can stack.
+func draw_status_rings(actor: FormaActor, radius: float) -> void:
+	if actor.burn_timer > 0:
+		draw_arc(actor.pos, radius + 6, clock * 3, clock * 3 + PI * 1.5, 32, P.BURN, 2, true)
+	if actor.poison_timer > 0:
+		D.outline(self, D.polygon(actor.pos, radius + 7, 6, clock * 0.1), P.POISON, 2)
 	if actor.slow_timer > 0:
-		D.outline(self, D.polygon(actor.pos, radius + 8, 5, clock * 0.3), P.DRUID, 1.5)
-	D.centered(self, actor.label, actor.pos + Vector2(0, -radius - (65 if actor.is_boss else 42)), 15, color if actor.is_player or actor.is_boss else P.TEXT)
-	D.bar(self, Rect2(actor.pos + Vector2(-25, -radius - 16), Vector2(50, 4)), actor.hp / actor.max_hp, color)
-	D.centered(self, str(int(actor.mass)), actor.pos + Vector2(0, radius + 12), 13, P.MUTED)
+		D.outline(self, D.polygon(actor.pos, radius + 9, 5, clock * 0.3), P.CHILL, P.STROKE_CONTROL)
+	if actor.stun_timer > 0:
+		for i in range(3):
+			draw_colored_polygon(D.polygon(actor.pos + Vector2.from_angle(clock * 2 + i * TAU / 3) * (radius + 9), 4, 4), P.STUN)
+	if actor.shield_timer > 0:
+		draw_arc(actor.pos, radius + 8, 0, TAU, 64, Color(P.SHIELD, 0.55 + sin(clock * 8) * 0.15), P.STROKE_RING, true)
+
+func draw_nameplate(actor: FormaActor, radius: float, color: Color) -> void:
+	var fraction = clampf(actor.hp / actor.max_hp, 0, 1)
+	var shown = actor.label.trim_prefix("Elite ") if actor.elite else actor.label
+	var top = actor.pos + Vector2(0, -radius - (65 if actor.is_boss else 42))
+	var name_color = color if actor.is_player or actor.is_boss else P.TEXT
+	if actor.elite:
+		# The elite marker is a form as well as a color: danger sits close to knight.
+		var chip_width = FormaType.width("Elite", "label") + 10
+		var total = chip_width + 6 + FormaType.width(shown, "body")
+		var chip = Rect2(top + Vector2(-total / 2, 2), Vector2(chip_width, 18))
+		D.panel(self, chip, Color(P.BG, 0.6), P.DANGER, P.RADIUS_XS)
+		D.styled_center(self, "Elite", Vector2(chip.get_center().x, chip.position.y + 2), "label", P.DANGER)
+		D.styled(self, shown, Vector2(chip.end.x + 6, top.y), "body", name_color)
+	else:
+		D.styled_center(self, shown, top, "body", name_color)
+	D.bar(self, Rect2(actor.pos + Vector2(-25, -radius - 16), Vector2(50, 4)), fraction, P.health(fraction))
+	if not actor.is_boss:
+		D.styled_center(self, FormaType.integer(actor.mass), actor.pos + Vector2(0, radius + 10), "body-sm", P.MUTED)
 
 func draw_hazard(field: FormaHazard) -> void:
 	var color: Color = FormaBosses.DATA[field.boss_kind].color
@@ -162,7 +186,7 @@ func draw_hazard(field: FormaHazard) -> void:
 		else:
 			D.outline(self, D.polygon(field.pos, field.radius * (0.3 + fmod(clock, 0.8)), 6, clock), Color(color, 0.25), 2)
 	if warning:
-		D.centered(self, "!", field.pos - Vector2(0, 14), 22, color)
+		D.styled_center(self, "!", field.pos - Vector2(0, 17), "title", color)
 
 func draw_effect(effect: FormaEffect) -> void:
 	var progress = 1.0 - effect.ttl / effect.duration
@@ -177,7 +201,9 @@ func draw_effect(effect: FormaEffect) -> void:
 					var direction = Vector2.from_angle(i * TAU / 8)
 					draw_line(effect.pos + direction * radius * 0.75, effect.pos + direction * radius, color, 2, true)
 		"text":
-			D.centered(self, effect.label, effect.pos, 19, color)
+			# Damage the local player takes reads as danger; everything else as text.
+			var taken = arena.player != null and effect.target_id == arena.player.id
+			D.styled_center(self, ("−" + effect.label) if taken else effect.label, effect.pos, "float", Color(P.DANGER, 1.0 - progress) if taken else color)
 		"grove":
 			draw_circle(effect.pos, effect.radius, Color(effect.color, 0.055))
 			D.outline(self, D.polygon(effect.pos, effect.radius, 12, clock * 0.07), Color(effect.color, 0.5), 1.5)

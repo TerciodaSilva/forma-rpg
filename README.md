@@ -70,7 +70,7 @@ Os jogadores usam `wss://SEU-DOMINIO/ws`. Uma página HTTPS não deve tentar con
 
 O jogo desenha diretamente na resolução física do canvas (`canvas_items`) e usa a densidade de pixels do navegador/monitor para manter o texto legível em telas Retina. Não estica mais uma imagem fixa de 1440×900: a arena preenche a janela e reposiciona a câmera e a mira após redimensionar.
 
-O HUD se reorganiza em telas verticais, horizontais e ultrawide. Telas estreitas usam seletor de uma classe por vez; o painel de evolução fica acima da barra de habilidades quando necessário. Configurações, ajuda e detalhes do bestiário permitem rolagem em janelas pequenas. A entrada continua sendo teclado e mouse.
+O HUD se reorganiza em telas verticais, horizontais e ultrawide. Ele ocupa seis zonas fixas nas bordas e deixa o centro da arena livre. Abaixo de 1000 px de largura, o chefe e os avisos descem para cima da barra de habilidades. Abaixo de 1100 px, o ranking sai da tela. Telas estreitas usam seletor de uma classe por vez, e o painel de dons e melhorias vira um botão que abre o bestiário. Configurações, ajuda e detalhes do bestiário permitem rolagem em janelas pequenas. A entrada continua sendo teclado e mouse.
 
 ## Custo crescente de evolução
 
@@ -87,10 +87,10 @@ O HUD mostra quanto falta. Novos níveis preservam as opções já exibidas e ac
 
 ## Desafio que acompanha a partida
 
-O indicador **AMEAÇA** no HUD cresce com tempo de sobrevivência, essência acumulada, nível, multiplicador de dano e dons dos jogadores vivos. Não há o antigo teto de crescimento dos reforços. A subida é gradual, no máximo 0,07 ponto por segundo, para não criar um pico instantâneo após um saque grande.
+O indicador **AMEAÇA** no HUD cresce com tempo de sobrevivência, essência acumulada, nível, multiplicador de dano e dons dos jogadores vivos. Não há o antigo teto de crescimento dos reforços. A subida é gradual, no máximo 0,035 ponto por segundo (+2,1 por minuto), para não criar um pico instantâneo após um saque grande.
 
 - Novos rivais recebem massa, vida e dano proporcionais à ameaça e ao líder; continuam evoluindo com o próprio farm.
-- Após 45 segundos, podem surgir **Elites**, identificados no nome, com mais resistência, perseguição mais ampla e escudo breve ao entrar.
+- Após 75 segundos, podem surgir **Elites** (até 35% dos reforços), identificados no nome, com mais resistência, perseguição mais ampla e escudo breve ao entrar.
 - Chefes novos têm resistência e dano ajustados ao poder dos jogadores e ao número de humanos. Ataques ficam mais frequentes; áreas perigosas preservam o tempo de aviso.
 - O intervalo entre chefes diminui conforme a ameaça cresce. Inimigos feridos não recuperam vida por causa do ajuste de dificuldade.
 - Uma nova partida solo reinicia a ameaça. Crescer continua trazendo vantagens, mas não torna os próximos encontros inofensivos.
@@ -99,6 +99,7 @@ O indicador **AMEAÇA** no HUD cresce com tempo de sobrevivência, essência acu
 
 - Arena de 3.600 × 2.800 por sala, com bots nas vagas livres que coletam, perseguem, fogem, atacam e usam habilidades.
 - Fragmentos atraídos pelo personagem aumentam massa e tamanho, reduzindo sua velocidade. O raio visual/físico para de crescer em 120 px, para que a progressão infinita não ultrapasse os limites do mapa; massa e níveis continuam crescendo.
+- Abater um rival concede até 35% da massa dele, limitado a meio nível do vencedor (absorver: até 65%, limitado a um nível inteiro). Os fragmentos deixados valem no máximo 30 cada. Isso impede que reforços, que entram proporcionais ao líder, alimentem um crescimento exponencial.
 - Absorção por proximidade ao centro: exige mais de 1,45× a massa de um rival abaixo de 45% da vida, ou mais de 2,2× a massa de um rival saudável. Escudos impedem absorção. Chefes não absorvem e não podem ser absorvidos.
 - Subir de nível libera três melhorias no canto inferior direito, sem pausar a arena nem bloquear controles, tanto no solo quanto no multiplayer. Escolha com 1–3 ou clique; o painel pode ser recolhido e acumula escolhas pendentes.
 - O primeiro chefe surge entre **90 e 150 segundos**, ou antes se você reunir **500 de essência**. Depois de cada derrota, outro surge após **35–65 segundos**. Há um chefe ativo por vez.
@@ -140,8 +141,18 @@ Derrotar novamente uma criatura cujo dom você já possui recupera 30% da vida m
 | Mago | Triângulo violeta | Orbe arcano | Supernova: explosão, dano e empurrão |
 | Paladino | Hexágono dourado | Martelo de luz | Santuário: cura e escudo |
 | Cavaleiro | Quadrado coral | Corte de aço | Investida: avanço ofensivo |
-| Arqueiro | Triângulo azul direcional | Flecha de cristal | Chuva de flechas: sete projéteis |
+| Arqueiro | Triângulo azul direcional | Flecha de cristal | Chuva de flechas: leque de quatro projéteis |
 | Druida | Pentágono verde | Espinho que desacelera | Raízes ancestrais: cura, dano e lentidão |
+
+| Classe | Vida | Vida/nível | Velocidade | Dano | Cadência | Alcance |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Mago | 100 | 9 | 205 | 23 | 0,48 s | 640 |
+| Paladino | 155 | 14 | 188 | 24 | 0,65 s | 130 |
+| Cavaleiro | 140 | 13 | 210 | 31 | 0,50 s | 140 |
+| Arqueiro | 90 | 9 | 207 | 15 | 0,32 s | 760 |
+| Druida | 110 | 11 | 195 | 17 | 0,55 s | 550 |
+
+O dano básico cresce 7% por nível. A melhoria **Poder primordial** soma 20 de dano por segundo a qualquer classe (o acréscimo por golpe acompanha a cadência), para que classes de ataque rápido não multipliquem o bônus. Lentidão reduz a velocidade para 60%; o espinho do Druida desacelera por 0,5 s. Paladino recebe 18% menos dano e Cavaleiro 12% menos.
 
 Os dons dos chefes funcionam em qualquer uma das cinco classes.
 
@@ -164,7 +175,7 @@ As evoluções aumentam o poder e acrescentam mecânicas: o Mago ganha ignição
 | 90 | Colapso dimensional | Trono solar | Golpe do destino | Eclipse de cristal | Mundo verde |
 | 100 | Big Bang | Apoteose | Fim dos reinos | Mil sóis | Árvore da eternidade |
 
-A partir do nível 100, a magia mantém o nome, padrão, alcance, recarga e parâmetros da forma final. Nível e melhorias do personagem continuam avançando; melhorias de dano ainda podem fortalecer a magia. As evoluções de magia não exigem gastar as escolhas do painel lateral.
+A partir do nível 100, a magia mantém o nome, padrão, alcance, recarga e parâmetros da forma final. Nível e melhorias do personagem continuam avançando. O dano das magias cresce de forma linear com a evolução: 0,6× na forma inicial até 3,4× no nível 100. As evoluções de magia não exigem gastar as escolhas do painel lateral.
 
 ## Controles
 
@@ -195,10 +206,11 @@ A partir do nível 100, a magia mantém o nome, padrão, alcance, recarga e par�
 - `boon_system.gd`: aquisição, efeitos e descarte dos dons por personagem.
 - `hazard.gd`: áreas e feixes com aviso, duração, dano e efeitos de estado.
 - `actor.gd`, `orb.gd`, `shot.gd`, `effect.gd`: modelos das entidades.
-- `classes.gd`: balanceamento das classes; `palette.gd`: cores centralizadas.
+- `classes.gd`: balanceamento das classes.
+- `palette.gd`, `type.gd`: tokens do design system (cores, espaçamento, raios, traços e os nove estilos de texto em Outfit). `paint.gd` desenha painéis por papel, key caps, ícones, barras e sigilos a partir deles.
 - `world_view.gd`, `interface.gd`: cenário, HUD, menus e bestiário.
 - `main.gd`: entrada, simulação e áudio.
-- `display.gd`, `layout.gd`: densidade de pixels e organização responsiva.
+- `display.gd`, `layout.gd`: densidade de pixels e as seis zonas fixas do HUD (vitais, sessão, sistema, ranking, build, ações e mapa), com regras responsivas.
 - `progression.gd`: custo crescente dos níveis e progresso da barra.
 - `director.gd`: ameaça progressiva e escala de reforços/chefes.
 - `network.gd`: servidor WebSocket, comandos, snapshots e ciclo de conexão.
@@ -221,9 +233,17 @@ A suíte verifica as 50 evoluções de magia, limites após nível 100, perfura�
 ./Jogar.command -- --capture-arena
 ./Jogar.command -- --capture-bestiary
 ./Jogar.command -- --capture-boss
+./Jogar.command -- --capture-pause
+./Jogar.command -- --capture-result
 ```
 
-Capturas ficam em `artifacts/`; recordes reais, em `user://forma_records.cfg`. O relatório final de validação está em `artifacts/validation.txt`: **751 verificações de gameplay/layout e 35 verificações de rede, zero falhas**, incluindo três ciclos de chefes e a simulação de três minutos.
+Capturas ficam em `artifacts/` (use `--screen` para escolher um monitor 1× e manter a escala lógica de 1440 × 900); recordes reais, em `user://forma_records.cfg`. O relatório final de validação está em `artifacts/validation.txt`: **965 verificações de gameplay/layout e 36 verificações de rede, zero falhas**, incluindo três ciclos de chefes e a simulação de três minutos.
+
+Relatório de balanceamento (duelos entre classes nos níveis 1, 10, 30 e 60 e partidas solo com um jogador controlado por IA cautelosa). Não faz verificações, apenas mede:
+
+```bash
+.tools/Godot.app/Contents/MacOS/Godot --headless --path . -s res://tests/balance_sim.gd -- --runs=6 --minutes=6
+```
 
 Testes de conexão real com servidor e clientes independentes:
 

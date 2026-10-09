@@ -343,7 +343,7 @@ func broadcast_room(number: int) -> void:
 		"shots": pack_list(room.shots), "hazards": pack_list(room.hazards), "effects": pack_list(room.effects),
 		"elapsed": room.elapsed, "threat": room.threat, "encounters": room.encounters,
 		"difficulty": room.difficulty, "rival_count": room.rival_count,
-		"next_boss_at": room.next_boss_at, "notice": room.notice, "notice_time": room.notice_time,
+		"next_boss_at": room.next_boss_at, "notice": room.notice, "notice_time": room.notice_time, "notice_tone": room.notice_tone,
 	}
 	var payload = var_to_bytes(state).compress(FileAccess.COMPRESSION_DEFLATE)
 	for id in peers:
@@ -397,8 +397,8 @@ func receive_snapshot(actor_id: int, payload: PackedByteArray) -> void:
 		var effect = FormaEffect.new()
 		unpack_entity(effect, data)
 		arena.effects.append(effect)
-	for key in ["elapsed", "threat", "encounters", "next_boss_at", "notice", "notice_time", "difficulty", "rival_count"]:
-		arena.set(key, state[key])
+	for key in ["elapsed", "threat", "encounters", "next_boss_at", "notice", "notice_time", "notice_tone", "difficulty", "rival_count"]:
+		arena.set(key, state.get(key, arena.get(key)))
 	update_local_mode()
 	if not first and previous_player != null and arena.player != null:
 		if arena.player.hp < previous_player.hp: arena.sound_requested.emit("hit")

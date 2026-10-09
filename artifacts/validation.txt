@@ -1,14 +1,15 @@
 FORMA — salas automáticas, nomes e magias evolutivas
 Godot 4.5 stable / Compatibility
 
-Gameplay/layout: 751 verificações, zero falhas, com simulação completa.
+Gameplay/layout: 965 verificações, zero falhas, com simulação completa.
 50 evoluções (10 por classe), desbloqueios nos níveis 10–100,
 recargas, dano, cura, escudos, perfuração, perseguição, veneno, ecos,
 limite de evolução nos níveis 101, 150 e 1000, limpeza ao morrer.
 Mantém as verificações de progressão crescente, bosses, dons, combate,
-controles durante escolhas de evolução e layout em nove formatos.
+controles durante escolhas de evolução e layout em nove formatos:
+zonas do HUD dentro da tela, sem sobreposição e com o centro livre.
 
-Rede: 35 verificações, zero falhas; encerramento sem erros do motor.
+Rede: 36 verificações, zero falhas; encerramento sem erros do motor.
 12 clientes independentes em WebSocket criam duas salas automaticamente.
 Primeira sala: 10 humanos. Segunda: 2 humanos + 8 bots.
 Valida nomes, classes, estado isolado por sala, magia de nível 100 remota,

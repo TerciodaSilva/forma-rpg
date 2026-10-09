@@ -16,36 +16,52 @@ var slots: SpinBox
 var bots: OptionButton
 var difficulty: OptionButton
 var message: Label
+var card: Panel
 
 func _ready() -> void:
 	layer = 10
 	root = Control.new()
 	root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(root)
+	# Native controls follow the same tokens as the canvas HUD: body type,
+	# raised fill, strong border at rest, gold border on hover and focus.
 	var theme = Theme.new()
-	theme.default_font = preload("res://assets/body_font.tres")
-	theme.default_font_size = 19
+	theme.default_font = FormaType.font("body")
+	theme.default_font_size = FormaType.size("body")
 	for type in ["Label", "Button", "LineEdit", "OptionButton", "SpinBox"]:
-		theme.set_color("font_color", type, FormaPalette.TEXT)
-		theme.set_color("font_hover_color", type, FormaPalette.GOLD)
-		theme.set_color("font_focus_color", type, FormaPalette.GOLD)
+		for key in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+			theme.set_color(key, type, FormaPalette.TEXT)
+		theme.set_color("font_disabled_color", type, FormaPalette.MUTED)
+		theme.set_color("font_placeholder_color", type, FormaPalette.MUTED)
+		theme.set_color("caret_color", type, FormaPalette.GOLD)
+		theme.set_color("selection_color", type, FormaPalette.GOLD_SOFT)
 		if type == "Label": continue
-		for state in ["normal", "hover", "pressed", "focus", "read_only"]:
-			var style = StyleBoxFlat.new()
-			style.bg_color = FormaPalette.RAISED
-			style.border_color = FormaPalette.GOLD if state in ["hover", "focus"] else FormaPalette.LINE
-			style.set_border_width_all(1)
-			style.set_corner_radius_all(7)
-			style.content_margin_left = 12
-			style.content_margin_right = 12
-			style.content_margin_top = 8
-			style.content_margin_bottom = 8
+		theme.set_font("font", type, FormaType.font("strong") if type in ["Button", "OptionButton"] else FormaType.font("body"))
+		for state in ["normal", "hover", "pressed", "focus", "read_only", "disabled"]:
+			var style = control_style(FormaPalette.RAISED, FormaPalette.LINE_STRONG)
+			match state:
+				"hover": style.border_color = FormaPalette.GOLD
+				"pressed":
+					style.bg_color = FormaPalette.RAISED.darkened(0.08)
+					style.border_color = FormaPalette.GOLD
+				"focus":
+					style.draw_center = false
+					style.border_color = FormaPalette.GOLD
+					style.set_border_width_all(int(FormaPalette.STROKE_FOCUS))
+				"read_only", "disabled":
+					style.bg_color = Color(FormaPalette.RAISED, 0.5)
+					style.border_color = FormaPalette.LINE
 			theme.set_stylebox(state, type, style)
 	root.theme = theme
 	var backdrop = ColorRect.new()
-	backdrop.color = Color(FormaPalette.BG, 0.97)
+	backdrop.color = FormaPalette.SCRIM
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(backdrop)
+	card = Panel.new()
+	var card_style = control_style(FormaPalette.PANEL, FormaPalette.LINE)
+	card_style.set_corner_radius_all(FormaPalette.RADIUS_MD)
+	card.add_theme_stylebox_override("panel", card_style)
+	root.add_child(card)
 	scroll = ScrollContainer.new()
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	root.add_child(scroll)
@@ -55,15 +71,16 @@ func _ready() -> void:
 	scroll.add_child(box)
 	get_viewport().size_changed.connect(resize_panel)
 	resize_panel()
-	add_label(box, "CONFIGURAÇÃO DA ARENA", FormaPalette.GOLD)
-	add_label(box, "Multiplayer · todos contra todos")
-	add_label(box, "Até 10 participantes por sala", FormaPalette.MUTED)
+	add_label(box, "Servidor e ajustes", FormaPalette.MUTED, "label")
+	add_label(box, "Configuração da arena", FormaPalette.TEXT, "title")
+	add_label(box, "Multiplayer, todos contra todos, com até 10 participantes por sala.", FormaPalette.MUTED)
+	add_label(box, "Seu nome", FormaPalette.MUTED, "label")
 	nickname = LineEdit.new()
 	nickname.placeholder_text = "Seu nome"
 	nickname.text = "Viajante"
 	nickname.max_length = 16
 	box.add_child(nickname)
-	add_label(box, "Servidor de salas automáticas", FormaPalette.MUTED)
+	add_label(box, "Servidor de salas automáticas", FormaPalette.MUTED, "label")
 	address = LineEdit.new()
 	address.text = default_address()
 	address.placeholder_text = "wss://seu-servidor.exemplo"
@@ -83,7 +100,7 @@ func _ready() -> void:
 	slots.max_value = 10
 	slots.value = 10
 	row.add_child(slots)
-	add_label(box, "Regras para o servidor que você criar", FormaPalette.MUTED)
+	add_label(box, "Regras para o servidor que você criar", FormaPalette.MUTED, "label")
 	difficulty = OptionButton.new()
 	for title in ["Desafio crescente · Normal", "Desafio crescente · Intenso", "Desafio crescente · Cataclismo"]:
 		difficulty.add_item(title)
@@ -94,10 +111,10 @@ func _ready() -> void:
 	bots.select(0)
 	bots.disabled = true
 	box.add_child(bots)
-	add_button(box, "Jogar · encontrar sala", func():
+	add_button(box, "Jogar · encontrar sala", true, func():
 		apply_settings()
 		network.join_room(address.text.strip_edges(), nickname.text, arena.selected_class))
-	var host_button = add_button(box, "Criar sala neste computador", func():
+	var host_button = add_button(box, "Criar sala neste computador", false, func():
 		apply_settings()
 		network.nickname = nickname.text
 		network.host(int(port.value), int(slots.value)))
@@ -107,9 +124,9 @@ func _ready() -> void:
 	message = Label.new()
 	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	message.custom_minimum_size.y = 50
-	message.add_theme_color_override("font_color", FormaPalette.GOLD)
+	message.add_theme_color_override("font_color", FormaPalette.TEXT)
 	box.add_child(message)
-	add_button(box, "Aplicar e voltar", func():
+	add_button(box, "Aplicar e voltar", false, func():
 		if network.active and not arena.networked: network.close()
 		apply_settings()
 		hide_panel())
@@ -129,17 +146,42 @@ func _ready() -> void:
 	add_child(menu_name)
 	root.hide()
 
-func add_label(parent: Control, text: String, color: Color = FormaPalette.TEXT) -> void:
+func control_style(fill: Color, border: Color) -> StyleBoxFlat:
+	var style = StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(FormaPalette.RADIUS_SM)
+	style.content_margin_left = FormaPalette.SPACE_3
+	style.content_margin_right = FormaPalette.SPACE_3
+	style.content_margin_top = 9
+	style.content_margin_bottom = 9
+	return style
+
+func add_label(parent: Control, text: String, color: Color = FormaPalette.TEXT, style: String = "body") -> void:
 	var label = Label.new()
-	label.text = text
+	label.text = FormaType.cased(style, text)
+	if style != "body":
+		label.add_theme_font_override("font", FormaType.font(style))
+		label.add_theme_font_size_override("font_size", FormaType.size(style))
 	label.autowrap_mode = TextServer.AUTOWRAP_OFF if parent is HBoxContainer else TextServer.AUTOWRAP_WORD_SMART
 	label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN if parent is HBoxContainer else Control.SIZE_EXPAND_FILL
 	label.add_theme_color_override("font_color", color)
 	parent.add_child(label)
 
-func add_button(parent: Control, text: String, callback: Callable) -> Button:
+func add_button(parent: Control, text: String, primary: bool, callback: Callable) -> Button:
 	var button = Button.new()
 	button.text = text
+	if primary:
+		# The one primary action: gold fill, on-accent text.
+		button.custom_minimum_size.y = 46
+		button.add_theme_font_override("font", FormaType.font("subhead"))
+		button.add_theme_font_size_override("font_size", FormaType.size("subhead"))
+		for key in ["font_color", "font_hover_color", "font_focus_color", "font_pressed_color"]:
+			button.add_theme_color_override(key, FormaPalette.ON_ACCENT)
+		for state in ["normal", "hover", "pressed", "focus"]:
+			var fill = FormaPalette.GOLD.lightened(0.1) if state == "hover" else FormaPalette.GOLD
+			button.add_theme_stylebox_override(state, control_style(fill, FormaPalette.GOLD))
 	button.pressed.connect(callback)
 	parent.add_child(button)
 	return button
@@ -173,12 +215,16 @@ func load_settings() -> void:
 
 func resize_panel() -> void:
 	var size = get_viewport().get_visible_rect().size
-	var width = minf(600, size.x - 32)
-	scroll.position = Vector2((size.x - width) / 2, 24)
-	scroll.size = Vector2(width, size.y - 48)
+	var width = minf(560, size.x - 64)
+	var height = minf(box.get_combined_minimum_size().y, size.y - 64)
+	scroll.position = Vector2((size.x - width) / 2, (size.y - height) / 2)
+	scroll.size = Vector2(width, height)
+	card.position = scroll.position - Vector2.ONE * FormaPalette.SPACE_4
+	card.size = scroll.size + Vector2.ONE * FormaPalette.SPACE_4 * 2
 
 func show_panel() -> void:
 	root.show()
+	resize_panel.call_deferred()
 	message.text = network.status
 
 func hide_panel() -> void:

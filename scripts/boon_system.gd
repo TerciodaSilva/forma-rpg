@@ -60,7 +60,7 @@ static func prevent_death(arena: FormaArena, actor: FormaActor) -> bool:
 	actor.shield_timer = 2
 	arena.add_effect(actor.pos, actor.radius() * 2, FormaPalette.GOLD, "nova", 0.9)
 	if actor.is_player:
-		arena.announce("Cinza imortal impediu o golpe fatal. Recarga: 60 s.")
+		arena.announce("Cinza imortal impediu o golpe fatal · recarga de 60 s", 4.0, "progress")
 	return true
 
 static func clear(actor: FormaActor) -> void:

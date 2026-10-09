@@ -7,7 +7,7 @@ signal sound_requested(cue: String)
 const SIZE = Vector2(3600, 2800)
 const NAMES = ["Nyx", "Orion", "Íris", "Atlas", "Lume", "Kael", "Vega", "Solis", "Flora", "Aster", "Rune", "Nox", "Lyra", "Oberon", "Elara", "Thorn"]
 const UPGRADES = [
-	{"title": "Poder primordial", "subtitle": "OFENSIVA", "body": "+10 de dano nos ataques básicos.", "kind": "power"},
+	{"title": "Poder primordial", "subtitle": "OFENSIVA", "body": "+20 de dano por segundo nos ataques básicos.", "kind": "power"},
 	{"title": "Coração de pedra", "subtitle": "VITALIDADE", "body": "+35 de vida máxima e cura completa.", "kind": "health"},
 	{"title": "Passos de vento", "subtitle": "MOBILIDADE", "body": "+12% de velocidade de movimento.", "kind": "speed"},
 	{"title": "Ímã de essência", "subtitle": "EXPANSÃO", "body": "+55 px de alcance de coleta.", "kind": "magnet"},
@@ -70,6 +70,8 @@ var attack_held: bool = false
 var spawn_timer: float = 0.0
 var notice: String = ""
 var notice_time: float = 0.0
+# "neutral", "progress" (gold) or "boss" (the live boss color).
+var notice_tone: String = "neutral"
 var next_id: int = 0
 var best_mass: int = 0
 var best_kills: int = 0
@@ -143,7 +145,7 @@ func spawn_rival() -> void:
 	# Rival levels follow the same gradual curve as the director. Using mass / 65
 	# made a late elite reach hundreds of levels and deal instant-kill damage.
 	rival.level = 1 + int(sqrt(rival.mass / 40.0))
-	rival.max_hp += rival.level * 8
+	rival.max_hp += rival.level * rival.growth()
 	rival.hp = rival.max_hp
 	rival.skill_timer = rng.randf_range(3, 10)
 
@@ -308,7 +310,7 @@ func gain_mass(actor: FormaActor, amount: float) -> void:
 		return
 	while actor.mass >= actor.next_level_mass:
 		actor.level += 1
-		actor.max_hp += 8
+		actor.max_hp += actor.growth()
 		actor.hp = minf(actor.max_hp, actor.hp + 25)
 		actor.next_level_mass += FormaProgression.cost(actor.level)
 		apply_random_upgrade(actor)
@@ -400,7 +402,8 @@ func update_shots(delta: float) -> void:
 			if closest.distance_to(actor.pos) < actor.radius() + shot.radius:
 				hurt(actor, shot.damage, actor_by_id(shot.owner_id))
 				if shot.class_id == 4 and shot.boss_kind < 0:
-					actor.slow_timer = 1.0
+					# Short enough that the Druid's cadence does not chain a permanent slow.
+					actor.slow_timer = maxf(actor.slow_timer, 0.5)
 				apply_status(actor, shot.status, shot.owner_id)
 				if shot.burning: apply_status(actor, "burn", shot.owner_id)
 				shot.hit_ids.append(actor.id)
@@ -541,6 +544,13 @@ func can_absorb(big: FormaActor, small: FormaActor) -> bool:
 		return big.mass > small.mass * 2.0
 	return big.mass > small.mass * 1.45 and (small.hp < small.max_hp * 0.45 or big.mass > small.mass * 2.2)
 
+# Frontline classes must close the distance under fire: Paladin takes 18% less
+# damage and Knight 12% less.
+func class_reduction(actor: FormaActor) -> float:
+	if actor.is_boss:
+		return 1.0
+	return 0.82 if actor.class_id == 1 else (0.88 if actor.class_id == 2 else 1.0)
+
 func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: bool = true) -> void:
 	if not actor.alive or actor.shield_timer > 0 or allies(actor, source):
 		return
@@ -554,7 +564,7 @@ func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: boo
 		# Growth now also improves durability. The visible radius is used so the
 		# mitigation follows the character's actual size, with a 45% floor.
 		size_reduction = clampf(1.0 - maxf(0.0, actor.radius() - 25.0) * 0.008, 0.55, 1.0)
-	var reduction = size_reduction * (0.82 if actor.class_id == 1 and not actor.is_boss else 1.0) * (0.78 if FormaBosses.Kind.GOLEM in actor.boons else 1.0)
+	var reduction = size_reduction * class_reduction(actor) * (0.78 if FormaBosses.Kind.GOLEM in actor.boons else 1.0)
 	var actual_damage = minf(actor.hp, capped_amount * reduction)
 	actor.hp -= capped_amount * reduction
 	FormaBoonSystem.on_hit(self, actor, source, actual_damage, show_number)
@@ -562,6 +572,7 @@ func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: boo
 	if show_number:
 		var effect = add_effect(actor.pos - Vector2(0, actor.radius()), 1, FormaPalette.TEXT, "text", 0.7)
 		effect.label = str(int(capped_amount))
+		effect.target_id = actor.id
 		effect.velocity = Vector2(0, -45)
 	if actor.is_player and show_number:
 		sound_requested.emit("hit")
@@ -571,7 +582,7 @@ func hurt(actor: FormaActor, amount: float, source: FormaActor, show_number: boo
 			actor.hp = actor.max_hp * 0.35
 			actor.shield_timer = 1.6
 			FormaBossCombat.hazard(self, actor, actor.pos, 230, 35, 1.6, 0.5, Vector2.INF, "burn")
-			announce("A Fênix renasceu das cinzas!", 4)
+			announce("A Fênix renasceu das cinzas", 4, "boss")
 			return
 		if FormaBoonSystem.prevent_death(self, actor):
 			return
@@ -585,13 +596,13 @@ func defeat(actor: FormaActor, source: FormaActor, absorbed: bool = false) -> vo
 	FormaBoonSystem.clear(actor)
 	add_effect(actor.pos, actor.radius() * 2.0, actor.tint(), "nova", 0.8)
 	if source != null and source.alive:
-		gain_mass(source, actor.mass * (0.65 if absorbed else 0.35))
+		gain_mass(source, kill_loot(source, actor, absorbed))
 		if source.is_player and not actor.is_boss:
 			source.kills += 1
-			announce(("Absorvido: " if absorbed else "Rival derrotado: ") + actor.label)
+			announce(("Absorvido · " if absorbed else "Rival derrotado · ") + actor.label)
 			sound_requested.emit("kill")
 	for i in range(12):
-		add_orb(actor.pos + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(10, 70), actor.mass * 0.035)
+		add_orb(actor.pos + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(10, 70), minf(actor.mass * 0.035, 30.0))
 	if actor.is_player:
 		actor.last_attacker = source.label if source != null else "a arena"
 		actor.upgrade_options.clear()
@@ -613,9 +624,16 @@ func defeat(actor: FormaActor, source: FormaActor, absorbed: bool = false) -> vo
 				source.boss_kills += 1
 				save_record()
 			var reward: String = FormaBosses.DATA[actor.boss_kind].boon
-			announce("%s conquistou %s%s" % [source.label, reward, "" if earned else " · cura de 30% (já possui)"], 7)
+			announce("%s conquistou %s%s" % [source.label, reward, "" if earned else " · cura de 30% (já possui)"], 7, "progress")
 			sound_requested.emit("level")
 		changed.emit()
+
+# Reinforcements enter scaled to the leader's mass, so uncapped kill loot fed an
+# exponential snowball. A kill is worth at most half of the killer's current
+# level (a full level when absorbing); farming and fights stay the main sources.
+func kill_loot(source: FormaActor, victim: FormaActor, absorbed: bool) -> float:
+	var share = victim.mass * (0.65 if absorbed else 0.35)
+	return minf(share, FormaProgression.cost(source.level) * (1.0 if absorbed else 0.5))
 
 func add_effect(point: Vector2, size: float, color: Color, kind: String, duration: float) -> FormaEffect:
 	var effect = FormaEffect.new()
@@ -659,7 +677,7 @@ func spawn_boss(forced_kind: int = -1) -> void:
 	boss.attack_timer = 2
 	boss.skill_timer = 5
 	encounters += 1
-	announce("%s despertou · encontro %d. Conquiste seu poder!" % [data.name, encounters], 7)
+	announce("%s despertou · encontro %d!" % [data.name, encounters], 7, "boss")
 	sound_requested.emit("skill")
 
 func draw_boss_kind() -> int:
@@ -671,10 +689,6 @@ func draw_boss_kind() -> int:
 		index = (index + 1) % boss_bag.size()
 	last_boss_kind = boss_bag.pop_at(index)
 	return last_boss_kind
-
-func show_upgrade() -> void:
-	# Improvements are applied automatically when the level is reached.
-	pass
 
 func apply_random_upgrade(actor: FormaActor) -> void:
 	if actor == null or not actor.alive:
@@ -695,13 +709,14 @@ func apply_upgrade(actor: FormaActor, option: int) -> void:
 	actor.pending_upgrades = 0
 	actor.upgrade_options.clear()
 	if actor.is_player:
-		announce("Melhoria automática: %s" % UPGRADES[option].title, 3.5)
+		announce("Melhoria automática · %s" % UPGRADES[option].title, 3.5, "progress")
 		sound_requested.emit("level")
 	changed.emit()
 
-func announce(message: String, duration: float = 4.0) -> void:
+func announce(message: String, duration: float = 4.0, tone: String = "neutral") -> void:
 	notice = message
 	notice_time = duration
+	notice_tone = tone
 
 func finish() -> void:
 	mode = "lost"

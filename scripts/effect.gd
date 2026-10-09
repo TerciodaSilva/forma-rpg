@@ -9,6 +9,8 @@ var color: Color = FormaPalette.GOLD
 var kind: String = "ring"
 var label: String = ""
 var owner_id: int = -1
+# Who a floating number belongs to: damage the local player takes reads as danger.
+var target_id: int = -1
 
 var damage: float = 17.0
 var healing: float = 12.0

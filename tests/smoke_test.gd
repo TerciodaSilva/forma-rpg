@@ -274,8 +274,9 @@ func test_boon_effects() -> void:
 	check(enemy.burn_timer > 0 and enemy.hp < hp, "Dragon boon burns over time")
 	FormaBoonSystem.grant(player, FormaBosses.Kind.NECROMANCER)
 	player.hp = 40
+	var enemy_hp = enemy.hp
 	arena.hurt(enemy, 10, player)
-	check(is_equal_approx(player.hp, 41.2), "Necromancer boon lifesteals actual damage")
+	check(is_equal_approx(player.hp, 40 + (enemy_hp - enemy.hp) * 0.12), "Necromancer boon lifesteals actual damage")
 	FormaBoonSystem.grant(player, FormaBosses.Kind.HYDRA)
 	arena.shots.clear()
 	player.attack_count = 0
@@ -423,14 +424,17 @@ func test_progressive_cost() -> void:
 func test_responsive_layout() -> void:
 	for size in [Vector2(640, 400), Vector2(390, 550), Vector2(320, 480), Vector2(390, 844), Vector2(844, 390), Vector2(768, 1024), Vector2(1280, 720), Vector2(1920, 1080), Vector2(2560, 1080)]:
 		var screen = Rect2(Vector2.ZERO, size)
-		var upgrade = FormaLayout.upgrades(size)
-		var skills = FormaLayout.skills(size)
-		for rect in [FormaLayout.health(size), upgrade, skills, FormaLayout.upgrades(size, true)]:
-			check(screen.encloses(rect), "HUD fits screen %s" % size)
-		check(not upgrade.intersects(skills), "Upgrade choices do not cover action bar %s" % size)
-		check(not upgrade.has_point(size / 2), "Upgrade panel keeps arena center clear %s" % size)
+		var zones: Dictionary = FormaLayout.zones(size)
+		var names = zones.keys()
+		for i in range(names.size()):
+			var rect: Rect2 = zones[names[i]]
+			check(screen.encloses(rect), "HUD zone %s fits screen %s" % [names[i], size])
+			check(not rect.has_point(size / 2), "HUD zone %s keeps arena center clear %s" % [names[i], size])
+			for j in range(i + 1, names.size()):
+				check(not rect.intersects(zones[names[j]]), "HUD zones %s and %s do not overlap %s" % [names[i], names[j], size])
 		for rect in FormaLayout.class_cards(size):
 			check(screen.encloses(rect), "Class selection fits screen %s" % size)
+		check(screen.encloses(Rect2(0, FormaLayout.menu_footer(size), 1, 152)), "Menu actions fit screen %s" % size)
 
 func test_spell_evolutions() -> void:
 	for kind in range(5):

@@ -65,10 +65,20 @@ func speed() -> float:
 	if is_boss:
 		return float(FormaBosses.DATA[boss_kind].speed) * (0.6 if slow_timer > 0 else 1.0)
 	var base: float = FormaClasses.DATA[class_id].speed
-	return maxf(110.0, base - (radius() - 25.0) * 0.62) * speed_multiplier * (0.48 if slow_timer > 0 else 1.0)
+	return maxf(110.0, base - (radius() - 25.0) * 0.62) * speed_multiplier * (0.6 if slow_timer > 0 else 1.0)
+
+# Flat upgrades add the same damage per second to every class: fast attackers get
+# smaller per-hit increments, so cadence does not multiply the bonus.
+func bonus_damage() -> float:
+	return damage_bonus * float(FormaClasses.DATA[class_id].rate) * 2.0
+
+# Bosses never use this; their attacks scale through damage_multiplier directly.
+# Max life gained per level: frontline classes grow sturdier than ranged ones.
+func growth() -> float:
+	return float(FormaClasses.DATA[class_id].growth)
 
 func damage() -> float:
-	return float(FormaClasses.DATA[class_id].damage) * (1.0 + (level - 1) * 0.09) + damage_bonus
+	return (float(FormaClasses.DATA[class_id].damage) * (1.0 + (level - 1) * 0.07) + bonus_damage()) * damage_multiplier
 
 func setup(new_id: int, kind: int, point: Vector2, title: String, player: bool = false) -> void:
 	id = new_id

@@ -54,11 +54,19 @@ func _ready() -> void:
 			arena.actors[i + 1].pos = arena.player.pos + Vector2.from_angle(i * 1.4) * (250 + i * 45)
 		world.camera = arena.player.pos
 		capture.call_deferred("arena")
-	elif "--capture-upgrade" in OS.get_cmdline_user_args():
-		arena.new_run(3)
-		arena.gain_mass(arena.player, 40)
-		arena.show_upgrade()
-		capture.call_deferred("upgrade")
+	elif "--capture-pause" in OS.get_cmdline_user_args():
+		arena.new_run(1)
+		world.camera = arena.player.pos
+		arena.mode = "paused"
+		capture.call_deferred("pause")
+	elif "--capture-result" in OS.get_cmdline_user_args():
+		arena.new_run(2)
+		arena.gain_mass(arena.player, 900)
+		arena.kills = 7
+		world.camera = arena.player.pos
+		arena.player.last_attacker = "Elite Kael"
+		arena.mode = "lost"
+		capture.call_deferred("result")
 	elif "--capture-bestiary" in OS.get_cmdline_user_args():
 		ui.bestiary_open = true
 		capture.call_deferred("bestiary")
@@ -69,6 +77,9 @@ func _ready() -> void:
 		FormaBossCombat.special(arena, arena.boss, arena.player)
 		world.camera = arena.player.pos
 		capture.call_deferred("boss")
+	elif "--capture-settings" in OS.get_cmdline_user_args():
+		settings.show_panel()
+		capture.call_deferred("settings")
 	elif "--capture-help" in OS.get_cmdline_user_args():
 		ui.help_open = true
 		capture.call_deferred("help")
@@ -205,6 +216,8 @@ func _input(event: InputEvent) -> void:
 		"paused":
 			if key == KEY_ESCAPE:
 				handle_action("resume")
+			elif key == KEY_H:
+				handle_action("help")
 		"lost":
 			if key == KEY_ENTER:
 				handle_action("restart")
@@ -221,12 +234,8 @@ func handle_action(action: String) -> void:
 		handle_action("bestiary")
 	elif action.begins_with("class_"):
 		arena.selected_class = int(action.trim_prefix("class_"))
-	elif action.begins_with("upgrade_"):
-		player_command("upgrade", int(action.trim_prefix("upgrade_")))
 	else:
 		match action:
-			"toggle_upgrades":
-				ui.upgrades_collapsed = not ui.upgrades_collapsed
 			"menu_next":
 				arena.selected_class = (arena.selected_class + 1) % 5
 			"menu_previous":
